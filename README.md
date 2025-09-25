@@ -9,75 +9,87 @@
 
 ## 本地运行
 
-以下步骤在 Windows、macOS 与大多数 Linux 发行版上均适用，只需根据自己系统的命令行工具选择对应的激活命令即可。
+以下步骤在 Windows、macOS 与大多数 Linux 发行版上均适用。每个步骤都列出了所需软件、打开方式与验证命令，便于初学者参考。
 
-1. **准备工作**
+1. **准备命令行工具**
 
-   - 安装 [Python 3.9+](https://www.python.org/downloads/)，安装时勾选 “Add Python to PATH”（Windows）。
-   - 安装 [Git](https://git-scm.com/downloads)，用于克隆项目（也可直接下载压缩包）。
+   | 操作系统 | 需要的软件 | 打开方式 |
+   | --- | --- | --- |
+   | Windows 10/11 | PowerShell（系统自带） | 在“开始菜单”搜索 **PowerShell** → 右键“以管理员身份运行” |
+   | Windows（可选） | Windows Terminal | [Microsoft Store](https://aka.ms/terminal) 安装 → 打开后选择 PowerShell 选项卡 |
+   | macOS | 终端 Terminal（系统自带） | 按 `Command + Space` 搜索 **Terminal** → 回车打开 |
+   | Ubuntu / Debian 等 | GNOME Terminal 或其它终端 | `Ctrl + Alt + T` |
+   | CentOS / Fedora 等 | GNOME Terminal 或其它终端 | `Super` 键打开应用列表 → 搜索 **Terminal** |
 
-2. **获取项目代码**
+2. **安装必备软件**
 
-   ```bash
-   git clone https://github.com/<your-account>/AI.git
-   cd AI
-   ```
+   | 软件 | 用途 | 安装方式 |
+   | --- | --- | --- |
+   | Python 3.9+ | 运行后端、虚拟环境和依赖 | [官方下载页面](https://www.python.org/downloads/)。Windows 安装时勾选 “Add Python to PATH”；macOS 可使用 [Homebrew](https://brew.sh) 执行 `brew install python@3.11`；Linux 可使用发行版包管理器，例如 `sudo apt install python3 python3-venv python3-pip` |
+   | Git | 克隆仓库或管理代码 | [Git 下载页面](https://git-scm.com/downloads)。macOS 可执行 `brew install git`，Linux 例如 `sudo apt install git` |
+   | 文本编辑器（可选） | 查看或修改代码 | 推荐 [VS Code](https://code.visualstudio.com/)，安装后用“打开文件夹”指向仓库目录 |
 
-   > 如果是下载压缩包，解压后用终端/PowerShell/cmd 切换到项目根目录。
+   > 验证安装：在命令行执行 `python --version`（或 `python3 --version`）、`git --version`，确认输出版本号且无报错。
 
-3. **创建并启用虚拟环境**
+3. **获取项目代码**
 
-   - macOS / Linux（bash 或 zsh）：
+   - **使用 Git 克隆（推荐）**
 
      ```bash
-     python3 -m venv .venv
-     source .venv/bin/activate
+     git clone https://github.com/<your-account>/AI.git
+     cd AI
      ```
 
-   - Windows（PowerShell）：
+   - **下载压缩包**
 
-     ```powershell
-     py -3 -m venv .venv
-     .\.venv\Scripts\Activate.ps1
+     访问仓库页面 → 点击 “Code” → “Download ZIP” → 解压到任意目录 → 在上一步的终端中使用 `cd` 切换到解压后的文件夹，例如：
+
+     ```bash
+     cd ~/Downloads/AI-main
      ```
 
-   激活成功后，命令行前缀会出现 `(.venv)`。
+4. **创建并启用虚拟环境**
 
-4. **安装依赖**
+   | 操作系统 | 创建命令 | 激活命令 |
+   | --- | --- | --- |
+   | macOS / Linux | `python3 -m venv .venv` | `source .venv/bin/activate` |
+   | Windows PowerShell | `py -3 -m venv .venv` | `.\.venv\Scripts\Activate.ps1` |
+
+   激活成功后，命令行提示前会出现 `(.venv)`。若在 Windows 出现执行策略限制，可在 PowerShell 以管理员身份运行 `Set-ExecutionPolicy RemoteSigned` 并选择 `Y`，之后重新执行激活命令。
+
+5. **安装依赖**
+
+   在已经激活的虚拟环境中运行：
 
    ```bash
    pip install --upgrade pip
    pip install -r requirements.txt
    ```
 
-5. **启动 Flask 开发服务器**
+   安装结束后可用 `pip list` 确认依赖是否正确安装。
 
-   - **推荐方式（使用 Flask 命令）**
+6. **启动 Flask 开发服务器**
 
-     - macOS / Linux：
+   - **方式 A：使用 Flask CLI**
 
-       ```bash
-       flask --app app run --debug
-       ```
+     | 操作系统 | 启动命令 |
+     | --- | --- |
+     | macOS / Linux | `flask --app app run --debug` |
+     | Windows PowerShell | `$env:FLASK_APP = "app"` 然后执行 `flask run --debug` |
 
-     - Windows（PowerShell）：
-
-       ```powershell
-       $env:FLASK_APP = "app"
-       flask run --debug
-       ```
-
-   - **或直接运行应用脚本**（跨平台通用）：
+   - **方式 B：直接运行脚本（跨平台通用）**
 
      ```bash
      python app.py
      ```
 
-6. **访问应用**
+   如果提示找不到 `flask` 命令，请确认虚拟环境已激活。
 
-   当终端显示 `Running on http://127.0.0.1:5000` 或类似信息时，打开浏览器输入该地址即可体验 AI 提示词增强工具。
+7. **访问与停止应用**
 
-> 若需要停止服务，返回到运行服务器的终端窗口并按下 `Ctrl + C`。
+   - 终端输出 `Running on http://127.0.0.1:5000`（或 `http://localhost:5000`）后，打开浏览器（Chrome、Edge、Safari 等）访问该地址即可看到网页界面。
+   - 停止服务：切换到运行服务器的终端窗口，按 `Ctrl + C`。Windows PowerShell 会提示是否终止批处理，输入 `Y` 回车。
+   - 再次启动时重复步骤 6；若关闭终端或重启电脑，需先执行步骤 1、3、4 重新进入项目和虚拟环境。
 
 ## 自定义词库
 
