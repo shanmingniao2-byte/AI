@@ -1,40 +1,75 @@
-"""Flask entrypoint for the AI prompt helper."""
-from __future__ import annotations
+AI 提示助手的 Flask 入口点。
+从__future__导入注释
 
-from flask import Flask, jsonify, render_template, request
+从Flask导入Flask、jsonify、render_template、请求
 
-from prompt_engine import ENGINE
-
-
-app = Flask(__name__)
+从prompt_engine导入ENGINE
 
 
-@app.route("/")
-def index():
-    languages = ENGINE.available_languages()
-    return render_template("index.html", languages=languages)
+应用程序 = Flask（__name__）
 
 
-@app.post("/api/process")
-def process_prompt():
-    payload = request.get_json(force=True)
-    prompt = payload.get("prompt", "")
-    languages = payload.get("languages", [])
-    creativity = float(payload.get("creativity", 0.5))
-
-    analysis = ENGINE.process_prompt(prompt, languages, creativity)
-
-    return jsonify(
-        {
-            "detected_language": analysis.detected_language,
-            "optimized_prompt": analysis.optimized_prompt,
-            "keywords": analysis.keywords,
-            "expanded_prompt": analysis.expanded_prompt,
-            "translations": analysis.translations,
-            "suggestions": analysis.suggestions,
-        }
-    )
+@app.route( “/” )
+定义索引（）：
+ 
+    语言 = ENGINE.available_languages()
+    返回render_template( “index.html” ，languages=languages)
 
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+def _parse_payload （）：
+ 
+    有效载荷=请求.get_json（强制=真）
+    prompt = payload.get( “提示” ，“” )
+    语言=有效载荷.获取（“语言” ，[]）
+    创造力 = float （payload.get（"创造力" ，0.5 ））
+    返回提示、语言、创造力
+
+
+def _serialize_analysis （分析）：
+ 
+    返回{
+        “检测到的语言” ：分析.检测到的语言，
+        “detected_language_code” ：分析.detected_language_code，
+        “优化提示” ：分析.优化提示，
+        “关键词” ：分析.关键词，
+        “expanded_prompt” ：分析.expanded_prompt，
+        “翻译” ：分析.翻译，
+        “建议” ：分析.建议，
+    }
+
+
+@app.post( “/api/process” )
+def process_prompt （）：
+ 
+    提示、语言、创造力 = _parse_payload()
+
+    分析 = ENGINE.process_prompt（提示，语言，创造力）
+
+    返回jsonify（_serialize_analysis（分析））
+
+
+@app.post( “/api/expand” )
+def expand_prompt （）：
+ 
+    提示，_语言，创造力 = _parse_payload()
+
+    分析 = ENGINE.process_prompt（提示，[]，创造力）
+
+    有效载荷=_serialize_analysis（分析）
+    有效载荷[ “翻译” ] = {}
+    返回jsonify（有效载荷）
+
+
+@app.post( “/api/翻译” )
+def translate_prompt （）：
+ 
+    提示、语言、创造力 = _parse_payload()
+
+    分析 = ENGINE.process_prompt（提示，语言，创造力）
+
+    有效载荷=_serialize_analysis（分析）
+    返回jsonify（有效载荷）
+
+
+如果__name__ == "__main__" ：
+    app.run（主机= “0.0.0.0” ，端口= 5000 ，调试= True ）
