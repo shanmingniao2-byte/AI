@@ -131,8 +131,64 @@ button:hover {
   padding-left: 1.5rem;
 }
 
-.translation {
-  margin-bottom: 0.5rem;
+.translation-matrix {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.85rem;
+  background: rgba(15, 23, 42, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.translation-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.translation-base {
+  margin: 0;
+  color: rgba(226, 232, 240, 0.85);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.translation-targets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.translation-targets li {
+  color: rgba(226, 232, 240, 0.8);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.15);
+  color: #bae6fd;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.empty-hint {
+  margin: 0;
+  color: rgba(226, 232, 240, 0.55);
+  font-size: 0.9rem;
 }
 
 .suggestion-category h4 {

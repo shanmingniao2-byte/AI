@@ -27,6 +27,7 @@ def process_prompt():
     return jsonify(
         {
             "detected_language": analysis.detected_language,
+            "detected_language_code": analysis.detected_language_code,
             "optimized_prompt": analysis.optimized_prompt,
             "keywords": analysis.keywords,
             "expanded_prompt": analysis.expanded_prompt,

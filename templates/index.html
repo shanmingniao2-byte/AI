@@ -11,7 +11,7 @@
     <div class="page">
       <header>
         <h1>AI Prompt Enhancer</h1>
-        <p>优化、扩写并翻译你的提示词，让生成图像更精准</p>
+        <p>优化提示词、扩写场景关键词，并提供多语言互译矩阵，助力图像创作</p>
       </header>
       <main>
         <section class="panel">
@@ -23,7 +23,7 @@
             <input type="range" id="creativity" name="creativity" min="0" max="1" step="0.1" value="0.5" />
 
             <fieldset>
-              <legend>翻译目标语言</legend>
+              <legend>互译涉及语言</legend>
               {% for lang in languages %}
               <label class="checkbox">
                 <input type="checkbox" name="languages" value="{{ lang.code }}" checked />
@@ -51,11 +51,11 @@
             <ul id="keywords"></ul>
           </div>
           <div class="result-block">
-            <h3>语义扩写</h3>
+            <h3>提示词扩写（场景关键词）</h3>
             <p id="expanded"></p>
           </div>
           <div class="result-block">
-            <h3>翻译</h3>
+            <h3>多语言互译</h3>
             <div id="translations"></div>
           </div>
           <div class="result-block" id="suggestions" hidden>
@@ -100,7 +100,12 @@
 
       function renderResult(data) {
         resultPanel.hidden = false;
-        detectedLanguageEl.textContent = data.detected_language;
+        const detectedCode = data.detected_language_code
+          ? data.detected_language_code.toUpperCase()
+          : "";
+        detectedLanguageEl.textContent = detectedCode
+          ? `${data.detected_language} (${detectedCode})`
+          : data.detected_language;
         optimizedEl.textContent = data.optimized_prompt || "-";
         keywordsEl.innerHTML = "";
         data.keywords.forEach((word) => {
@@ -111,12 +116,42 @@
         expandedEl.textContent = data.expanded_prompt || "-";
 
         translationsEl.innerHTML = "";
-        Object.entries(data.translations).forEach(([code, text]) => {
+        const translationEntries = data.translations || {};
+        Object.entries(translationEntries).forEach(([code, entry]) => {
           const block = document.createElement("div");
-          block.className = "translation";
-          block.innerHTML = `<strong>${code.toUpperCase()}:</strong> <span>${text || "-"}</span>`;
+          block.className = "translation-matrix";
+
+          const heading = document.createElement("div");
+          heading.className = "translation-heading";
+          heading.innerHTML = `<strong>${entry.label}</strong> <span class="tag">${code.toUpperCase()}</span>`;
+          block.appendChild(heading);
+
+          const base = document.createElement("p");
+          base.className = "translation-base";
+          base.textContent = entry.base_text || "-";
+          block.appendChild(base);
+
+          const mutual = entry.mutual || {};
+          if (Object.keys(mutual).length) {
+            const list = document.createElement("ul");
+            list.className = "translation-targets";
+            Object.entries(mutual).forEach(([targetCode, text]) => {
+              const li = document.createElement("li");
+              li.innerHTML = `<span class="tag">${targetCode.toUpperCase()}</span> ${text || "-"}`;
+              list.appendChild(li);
+            });
+            block.appendChild(list);
+          }
+
           translationsEl.appendChild(block);
         });
+
+        if (!Object.keys(translationEntries).length) {
+          const empty = document.createElement("p");
+          empty.className = "empty-hint";
+          empty.textContent = "请选择至少一种语言以查看互译结果。";
+          translationsEl.appendChild(empty);
+        }
 
         const suggestions = data.suggestions || {};
         suggestionsEl.innerHTML = "";
