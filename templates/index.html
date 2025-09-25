@@ -32,7 +32,15 @@
               {% endfor %}
             </fieldset>
 
-            <button type="submit">生成增强提示词</button>
+            <div class="action-buttons">
+              <button type="submit" id="generate-button">生成增强提示词</button>
+              <button type="button" id="expand-button" class="secondary">
+                提示词扩写
+              </button>
+              <button type="button" id="translate-button" class="secondary">
+                多语言互译
+              </button>
+            </div>
           </form>
         </section>
 
@@ -74,6 +82,8 @@
       const expandedEl = document.getElementById("expanded");
       const translationsEl = document.getElementById("translations");
       const suggestionsEl = document.getElementById("suggestions");
+      const expandButton = document.getElementById("expand-button");
+      const translateButton = document.getElementById("translate-button");
       const creativityInput = document.getElementById("creativity");
       const creativityValue = document.getElementById("creativity-value");
 
@@ -81,42 +91,111 @@
         creativityValue.textContent = creativityInput.value;
       });
 
+      expandButton.addEventListener("click", async () => {
+        const payload = collectFormValues();
+        const response = await fetch("/api/expand", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        ensureResultPanel();
+        updateCoreSections(data);
+        updateTranslations({});
+      });
+
+      translateButton.addEventListener("click", async () => {
+        const payload = collectFormValues();
+        const response = await fetch("/api/translate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        ensureResultPanel();
+        updateCoreSections(data);
+        updateTranslations(data.translations || {});
+      });
+
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
-        const formData = new FormData(form);
-        const prompt = formData.get("prompt");
-        const creativity = formData.get("creativity");
-        const languages = formData.getAll("languages");
-
+        const payload = collectFormValues();
         const response = await fetch("/api/process", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt, creativity, languages }),
+          body: JSON.stringify(payload),
         });
 
         const data = await response.json();
         renderResult(data);
       });
 
+      function collectFormValues() {
+        const formData = new FormData(form);
+        const prompt = formData.get("prompt");
+        const creativity = formData.get("creativity");
+        const languages = formData.getAll("languages");
+        return { prompt, creativity, languages };
+      }
+
       function renderResult(data) {
+        ensureResultPanel();
+        updateCoreSections(data);
+        updateTranslations(data.translations || {});
+      }
+
+      function ensureResultPanel() {
         resultPanel.hidden = false;
+      }
+
+      function updateCoreSections(data) {
         const detectedCode = data.detected_language_code
           ? data.detected_language_code.toUpperCase()
           : "";
         detectedLanguageEl.textContent = detectedCode
           ? `${data.detected_language} (${detectedCode})`
-          : data.detected_language;
+          : data.detected_language || "-";
         optimizedEl.textContent = data.optimized_prompt || "-";
         keywordsEl.innerHTML = "";
-        data.keywords.forEach((word) => {
+        (data.keywords || []).forEach((word) => {
           const li = document.createElement("li");
           li.textContent = word;
           keywordsEl.appendChild(li);
         });
         expandedEl.textContent = data.expanded_prompt || "-";
 
+        const suggestions = data.suggestions || {};
+        suggestionsEl.innerHTML = "";
+        if (Object.keys(suggestions).length) {
+          suggestionsEl.hidden = false;
+          Object.entries(suggestions).forEach(([category, options]) => {
+            const block = document.createElement("div");
+            block.className = "suggestion-category";
+            block.innerHTML = `<h4>${category}</h4>`;
+            const list = document.createElement("ul");
+            options.forEach((item) => {
+              const li = document.createElement("li");
+              li.textContent = item;
+              list.appendChild(li);
+            });
+            block.appendChild(list);
+            suggestionsEl.appendChild(block);
+          });
+        } else {
+          suggestionsEl.hidden = true;
+        }
+      }
+
+      function updateTranslations(translationEntries) {
         translationsEl.innerHTML = "";
-        const translationEntries = data.translations || {};
+        if (!Object.keys(translationEntries).length) {
+          const empty = document.createElement("p");
+          empty.className = "empty-hint";
+          empty.textContent = "请选择至少一种语言以查看互译结果。";
+          translationsEl.appendChild(empty);
+          return;
+        }
+
         Object.entries(translationEntries).forEach(([code, entry]) => {
           const block = document.createElement("div");
           block.className = "translation-matrix";
@@ -145,34 +224,6 @@
 
           translationsEl.appendChild(block);
         });
-
-        if (!Object.keys(translationEntries).length) {
-          const empty = document.createElement("p");
-          empty.className = "empty-hint";
-          empty.textContent = "请选择至少一种语言以查看互译结果。";
-          translationsEl.appendChild(empty);
-        }
-
-        const suggestions = data.suggestions || {};
-        suggestionsEl.innerHTML = "";
-        if (Object.keys(suggestions).length) {
-          suggestionsEl.hidden = false;
-          Object.entries(suggestions).forEach(([category, options]) => {
-            const block = document.createElement("div");
-            block.className = "suggestion-category";
-            block.innerHTML = `<h4>${category}</h4>`;
-            const list = document.createElement("ul");
-            options.forEach((item) => {
-              const li = document.createElement("li");
-              li.textContent = item;
-              list.appendChild(li);
-            });
-            block.appendChild(list);
-            suggestionsEl.appendChild(block);
-          });
-        } else {
-          suggestionsEl.hidden = true;
-        }
       }
     </script>
   </body>
