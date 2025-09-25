@@ -163,6 +163,155 @@ class PromptEngine:
         "neon": ["glowing", "luminous"],
         "detailed": ["intricate", "highly detailed"],
         "watercolor": ["painterly", "soft brushstrokes"],
+        "city": ["urban", "metropolitan"],
+        "night": ["nocturnal", "after dark"],
+        "character": ["figure", "subject"],
+        "沙漠": ["荒漠", "沙海"],
+        "山脉": ["群山", "高山"],
+    }
+
+    SEMANTIC_SCENE_EXPANSIONS = {
+        "cyberpunk": {
+            "base": [
+                "neon drenched megacity skyline",
+                "holographic advertisements flickering overhead",
+                "dense futuristic alleyways",
+            ],
+            "context_map": {
+                "rain": [
+                    "rain-slick streets reflecting vibrant signage",
+                    "mist rising from wet pavement",
+                ],
+                "night": [
+                    "deep midnight palette",
+                    "glowing light trails between skyscrapers",
+                ],
+                "portrait": [
+                    "cybernetic character details and luminous implants",
+                ],
+            },
+        },
+        "mountain": {
+            "base": [
+                "sweeping alpine vista",
+                "crisp high-altitude atmosphere",
+                "layered ridgelines fading into the distance",
+            ],
+            "context_map": {
+                "sunset": [
+                    "warm sunset glow brushing the peaks",
+                    "long shadows stretching across the valleys",
+                ],
+                "mist": [
+                    "morning mist weaving between summits",
+                ],
+                "forest": [
+                    "conifer forests carpeting the lower slopes",
+                ],
+            },
+        },
+        "forest": {
+            "base": [
+                "lush canopy layers",
+                "filtered light beams through dense foliage",
+                "rich biodiversity ambience",
+            ],
+            "context_map": {
+                "sunset": [
+                    "warm dusk tones painting the treetops",
+                ],
+                "fog": [
+                    "mystical mist hugging the forest floor",
+                ],
+                "river": [
+                    "glistening stream winding through the undergrowth",
+                ],
+            },
+        },
+        "portrait": {
+            "base": [
+                "expressive facial storytelling",
+                "fine detail on skin texture and lighting",
+                "carefully balanced composition",
+            ],
+            "context_map": {
+                "dramatic": [
+                    "bold chiaroscuro contrast",
+                ],
+                "studio": [
+                    "controlled three-point lighting",
+                ],
+                "cyberpunk": [
+                    "augmented reality inspired accessories",
+                ],
+            },
+        },
+        "sunset": {
+            "base": [
+                "radiant horizon gradients",
+                "soft golden rim light",
+                "sky painted with warm oranges and magentas",
+            ],
+            "context_map": {
+                "ocean": [
+                    "reflections rippling across calm water",
+                ],
+                "city": [
+                    "silhouetted skyline against the evening glow",
+                ],
+                "mountain": [
+                    "alpenglow on distant peaks",
+                ],
+            },
+        },
+        "city": {
+            "base": [
+                "layered urban architecture",
+                "busy streets alive with movement",
+                "complex skyline perspective",
+            ],
+            "context_map": {
+                "night": [
+                    "window lights sparkling like constellations",
+                ],
+                "rain": [
+                    "reflections shimmering on wet asphalt",
+                ],
+                "sunset": [
+                    "warm evening glow washing over skyscrapers",
+                ],
+            },
+        },
+        "沙漠": {
+            "base": [
+                "连绵起伏的沙丘纹理",
+                "炽烈阳光下的强烈光影",
+                "风塑形成的精细沙纹",
+            ],
+            "context_map": {
+                "日落": [
+                    "夕阳染红的天际与沙丘",
+                ],
+                "旅人": [
+                    "人物脚步在沙面留下的延伸轨迹",
+                ],
+            },
+        },
+        "山脉": {
+            "base": [
+                "巍峨山峰连绵成势",
+                "云海在山谷间翻腾",
+                "远近景层次分明",
+            ],
+            "context_map": {
+                "日出": [
+                    "晨曦为山巅镀上一圈金光",
+                ],
+                "湖泊": [
+                    "山脚下静谧的高山湖倒映群峰",
+                ],
+            },
+        },
     }
 
     CATEGORY_SUGGESTIONS = {
@@ -287,18 +436,54 @@ class PromptEngine:
                 suggestions[category] = data["options"]
         return suggestions
 
+    def _scene_expansions(
+        self, keyword: str, keyword_set: Sequence[str], creativity: float
+    ) -> List[str]:
+        if keyword not in self.SEMANTIC_SCENE_EXPANSIONS:
+            return []
+
+        data = self.SEMANTIC_SCENE_EXPANSIONS[keyword]
+        options: List[str] = list(data.get("base", []))
+        context_map = data.get("context_map", {})
+
+        # Normalise the lookup structure for quick membership checks.
+        set_keywords = set(keyword_set)
+        for context_keyword, phrases in context_map.items():
+            if context_keyword in set_keywords:
+                options.extend(phrases)
+
+        if not options:
+            return []
+
+        # Determine how many scene phrases to surface based on creativity.
+        unique_options: List[str] = []
+        seen_options = set()
+        for option in options:
+            if option not in seen_options:
+                unique_options.append(option)
+                seen_options.add(option)
+
+        count = max(1, int(round(creativity * len(unique_options))))
+        return unique_options[:count]
+
     def expand_prompt(self, keywords: Sequence[str], creativity: float = 0.5) -> str:
         creativity = max(0.0, min(1.0, creativity))
         expanded_parts: List[str] = []
         for word in keywords:
+            segments: List[str] = [word]
+
             synonyms = self.SYNONYM_MAP.get(word, [])
-            count = max(1, int(round(creativity * len(synonyms)))) if synonyms else 0
-            chosen = synonyms[:count]
-            if chosen:
-                expanded_parts.append(f"{word} ({', '.join(chosen)})")
-            else:
-                expanded_parts.append(word)
-        return ", ".join(expanded_parts)
+            if synonyms:
+                count = max(1, int(round(creativity * len(synonyms))))
+                segments.append(f"同义: {', '.join(synonyms[:count])}")
+
+            scene_phrases = self._scene_expansions(word, keywords, creativity)
+            if scene_phrases:
+                segments.append(f"场景: {'; '.join(scene_phrases)}")
+
+            expanded_parts.append(" | ".join(segments))
+
+        return "; ".join(expanded_parts)
 
     def translate_prompt(
         self, text: str, source_lang: str, target_lang: str
