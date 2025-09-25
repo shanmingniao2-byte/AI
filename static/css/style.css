@@ -1,257 +1,229 @@
-{
-  配色方案：浅色深色；
-  --bg ：#0f172a ；
-  --面板：rgba （15，23，42，0.72 ）；
-​​​​
-  --面板灯：rgba （255，255，255，0.85 ）；
-​​​
-  --文本：#e2e8f0 ；
-  --重音：#38bdf8 ；
-  --border : rgba ( 148 , 163 , 184 , 0.2 );
-  字体系列：'Inter' ，system-ui，-apple-system，BlinkMacSystemFont，'Segoe UI' ，无衬线；
+:root {
+  color-scheme: light dark;
+  --bg: #0f172a;
+  --panel: rgba(15, 23, 42, 0.72);
+  --panel-light: rgba(255, 255, 255, 0.85);
+  --text: #e2e8f0;
+  --accent: #38bdf8;
+  --border: rgba(148, 163, 184, 0.2);
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-身体{
-  边距：0 ；
-  最小高度：100vh ；
-  背景：径向渐变（顶部圆圈，#1e3a8a ，#0f172a 55% ）；
- 
-  颜色：var （--文本）；
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #1e3a8a, #0f172a 55%);
+  color: var(--text);
 }
 
-。页{
-  最大宽度：1200px ；
-  边距：0自动；
-  填充：2rem ；
-  显示：弹性；
-  弹性方向：列；
-  间隙：2rem ；
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
-标题{
-  文本对齐：居中；
+header {
+  text-align: center;
 }
 
-标题h1 {
- 
-  字体大小：2.4rem ；
-  下边距：0.5rem ；
+header h1 {
+  font-size: 2.4rem;
+  margin-bottom: 0.5rem;
 }
 
-标题p {
- 
-  颜色：rgba （226，232，240，0.75 ）；​​​​​
-  边距：0 ；
+header p {
+  color: rgba(226, 232, 240, 0.75);
+  margin: 0;
 }
 
-主要的{
-  显示：网格；
-  grid-template-columns ：重复（自动适应，minmax （320px ，1 fr））；
-  间隙：1.5rem ；
+main {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
 }
 
-。控制板{
-  背景：var （--panel）；
-  背景滤镜：模糊（18px ）；
-  边框：1px实心var (--border)；
-  边框半径：1.25rem ；
-  填充：1.75rem ；
-  盒子
-阴影：0 25px 45px rgba （15，23，42，0.35 ）；​​​​   
+.panel {
+  background: var(--panel);
+  backdrop-filter: blur(18px);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  padding: 1.75rem;
+  box-shadow: 0 25px 45px rgba(15, 23, 42, 0.35);
 }
 
-形式{
-  显示：弹性；
-  弹性方向：列；
-  间隙：1rem ；
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-标签，
-传奇{
-  字体粗细：600 ；
+label,
+legend {
+  font-weight: 600;
 }
 
-文本区域{
-  调整大小：垂直；
-  最小高度：140px ；
-  边框半径：0.75rem ；
-  边框：1px实心var (--border)；
-  填充：0.75rem 1rem ；
- 
-  字体大小：1rem ；
-  颜色：继承；
-  背景：rgba （15，23，42，0.4 ）；​​​​​
+textarea {
+  resize: vertical;
+  min-height: 140px;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  color: inherit;
+  background: rgba(15, 23, 42, 0.4);
 }
 
-输入[type= '范围' ] {
-  宽度：100% ；
+input[type='range'] {
+  width: 100%;
 }
 
-字段集{
-  边框：1px实心var (--border)；
-  边框半径：0.75rem ；
-  填充：1rem ；
-  显示：网格；
-  间隙：0.5rem ；
+fieldset {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  display: grid;
+  gap: 0.5rem;
 }
 
-.复选框{
-  显示：弹性；
-  对齐项目：居中；
-  间隙：0.5rem ；
-  字体大小：0.95rem ；
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
 }
 
-按钮{
-  背景：线性渐变（135度，#38bdf8 ，#2563eb ）；
-  边框：无；
-  颜色：白色；
-  填充：0.85rem 1.25rem ；
- 
-  边框半径：999px ；
-  字体大小：1rem ；
-  字体粗细：600 ；
-  光标：指针；
-  过渡：变换0.2s缓和，框阴影0.2s缓和；
+button {
+  background: linear-gradient(135deg, #38bdf8, #2563eb);
+  border: none;
+  color: white;
+  padding: 0.85rem 1.25rem;
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-按钮：悬停{
-  变换：translateY （-1px ）；
-  盒子阴影：0 18px 35px rgba （56，189，248，0.35 ）；
-​​​​   
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 35px rgba(56, 189, 248, 0.35);
 }
 
-.动作按钮{
-  显示：弹性；
-  flex-wrap ：包裹；
-  间隙：0.75rem ；
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
-.action-buttons按钮{
- 
-  弹性：1 1 180px ；
-  
+.action-buttons button {
+  flex: 1 1 180px;
 }
 
 .action-buttons .secondary {
- 
-  背景：透明；
-  颜色：#38bdf8 ；
-  边框：1px实线rgba （56，189，248，0.6 ）；
-​​​​
-  盒子阴影：无；
+  background: transparent;
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.6);
+  box-shadow: none;
 }
 
-.action-buttons .secondary :hover {
- 
-  盒子
-阴影：0 12px 25px rgba （56，189，248，0.3 ）；​​​​   
-  背景：rgba （56，189，248，0.12 ）；
-​​​​​
+.action-buttons .secondary:hover {
+  box-shadow: 0 12px 25px rgba(56, 189, 248, 0.3);
+  background: rgba(56, 189, 248, 0.12);
 }
 
-.结果块+ .结果块{
-  上边距：1.25rem ；
+.result-block + .result-block {
+  margin-top: 1.25rem;
 }
 
-.结果块h3 {
- 
-  边距：0 0 0.5rem ；
-  
+.result-block h3 {
+  margin: 0 0 0.5rem;
 }
 
-.结果块p ，
- 
-.结果块ul {
- 
-  边距：0 ；
-  颜色：rgba （226，232，240，0.85 ）；​​​​​
+.result-block p,
+.result-block ul {
+  margin: 0;
+  color: rgba(226, 232, 240, 0.85);
 }
 
-.结果块ul {
- 
-  列表样式：光盘；
-  左填充：1.5rem ；
+.result-block ul {
+  list-style: disc;
+  padding-left: 1.5rem;
 }
 
-.翻译矩阵{
-  边框：1px实心var (--border)；
-  边框半径：0.75rem ；
-  填充：0.85rem 1rem ；
- 
-  下边距：0.85rem ；
-  背景：rgba （15，23，42，0.35 ）；
-​​​​​
-  显示：弹性；
-  弹性方向：列；
-  间隙：0.5rem ；
+.translation-matrix {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.85rem;
+  background: rgba(15, 23, 42, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.翻译标题{
-  显示：弹性；
-  对齐内容：间距；
-  对齐项目：居中；
-  字体粗细：600 ；
-  字体大小：0.95rem ；
+.translation-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 0.95rem;
 }
 
-.翻译库{
-  边距：0 ；
-  颜色：rgba （226，232，240，0.85 ）；​​​​​
-  字体大小：0.95rem ；
-  行高：1.5 ；
+.translation-base {
+  margin: 0;
+  color: rgba(226, 232, 240, 0.85);
+  font-size: 0.95rem;
+  line-height: 1.5;
 }
 
-.翻译目标{
-  列表样式：无；
-  边距：0 ；
-  填充：0 ；
-  显示：网格；
-  间隙：0.35rem ；
+.translation-targets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
 }
 
-.翻译目标li {
- 
-  颜色：rgba （226，232，240，0.8 ）；​​​​​
-  字体大小：0.9rem ；
-  显示：弹性；
-  对齐项目：居中；
-  间隙：0.4rem ；
+.translation-targets li {
+  color: rgba(226, 232, 240, 0.8);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
-。标签{
-  显示：内联弹性；
-  对齐项目：居中；
-  填充：0.15rem 0.45rem ；
- 
-  边框半径：999px ；
-  背景：rgba （56，189，248，0.15 ）；
-​​​​​
-  颜色：#bae6fd ；
-  字体大小：0.75rem ；
-  字母间距：0.02em ；
-  文本转换：大写；
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.15);
+  color: #bae6fd;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
-.空提示{
-  边距：0 ；
-  颜色：rgba （226，232，240，0.55 ）；​​​​​
-  字体大小：0.9rem ；
+.empty-hint {
+  margin: 0;
+  color: rgba(226, 232, 240, 0.55);
+  font-size: 0.9rem;
 }
 
-.建议类别h4 {
- 
-  下边距：0.35rem ；
-  文本转换：大写；
+.suggestion-category h4 {
+  margin-bottom: 0.35rem;
+  text-transform: capitalize;
 }
 
-@media （最大宽度：640px ）{
-  。页{
-    填充：1.5rem ；
+@media (max-width: 640px) {
+  .page {
+    padding: 1.5rem;
   }
 
-  标题h1 {
- 
-    字体大小：2rem ；
+  header h1 {
+    font-size: 2rem;
   }
 }
