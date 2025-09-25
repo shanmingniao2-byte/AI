@@ -35,18 +35,34 @@
 
    - **使用 Git 克隆（推荐）**
 
-     ```bash
-     git clone https://github.com/<your-account>/AI.git
-     cd AI
-     ```
+     1. 打开合适的 Git 终端工具：
+        - Windows：可使用安装 Git 时附带的 **Git Bash**，或在 PowerShell 中执行 Git 命令。
+        - macOS / Linux：使用系统终端即可。
+     2. 在终端中定位到希望保存项目的目录，例如 `cd ~/Projects`。
+     3. 执行以下命令克隆仓库并进入目录：
 
-   - **下载压缩包**
+        ```bash
+        git clone https://github.com/<your-account>/AI.git
+        cd AI
+        ```
 
-     访问仓库页面 → 点击 “Code” → “Download ZIP” → 解压到任意目录 → 在上一步的终端中使用 `cd` 切换到解压后的文件夹，例如：
+     4. 通过 `ls`（Windows 为 `dir`）确认目录中存在 `app.py`、`templates` 等文件。
 
-     ```bash
-     cd ~/Downloads/AI-main
-     ```
+   - **通过浏览器下载 ZIP 压缩包**
+
+     1. 打开常用浏览器（Chrome、Edge、Safari 或 Firefox 均可），访问仓库网页 `https://github.com/<your-account>/AI`。
+     2. 点击页面右上角的绿色 **Code** 按钮，在弹出的菜单中选择 **Download ZIP**，浏览器会将压缩包保存到默认下载目录。
+     3. 使用操作系统自带的压缩工具解压：
+        - Windows：右键压缩包 → “全部提取” → 选择解压路径。
+        - macOS：双击压缩包自动解压。
+        - Linux：可在文件管理器中右键解压，或在终端执行 `unzip AI-main.zip`。
+     4. 返回命令行，使用 `cd` 切换到解压后的目录，例如：
+
+        ```bash
+        cd ~/Downloads/AI-main
+        ```
+
+     5. 同样可使用 `ls`/`dir` 核对目录内容是否完整。
 
 4. **创建并启用虚拟环境**
 
