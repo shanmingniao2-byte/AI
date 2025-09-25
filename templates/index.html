@@ -1,260 +1,230 @@
-<!DOCTYPE html >
-< html lang = “en” > 
-  <头>
-    < meta charset = “utf-8” /> 
-    < meta name = “viewport” content = “width=device-width，initial-scale=1” />  
-    < title > AI 提示增强器</ title >
-    < link rel = “样式表” href = “https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap” />  
-    < link rel = “样式表” href = “{{url_for（'static'，filename ='css / style.css'）}}” />  
-  </头>
-  <正文>
-    < div class = “页面” > 
-      <标题>
-        < h1 > AI提示增强器</ h1 >
-        < p >优化提示词、扩写场景关键词，并提供多语言互译矩阵，助力图像创作</ p >
-      </ header >
-      <主要>
-        <部分类= “面板” > 
-          <表单ID = “提示表单” > 
-            < label for = "prompt" >输入原始提示词</ label > 
-            < textarea id = "prompt" name = "prompt" rows = "6" placeholder = "例如：日落时分霓虹灯下的赛博朋克肖像" > </ textarea >    
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Prompt Enhancer</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <h1>AI Prompt Enhancer</h1>
+        <p>优化提示词、扩写场景关键词，并提供多语言互译矩阵，助力图像创作</p>
+      </header>
+      <main>
+        <section class="panel">
+          <form id="prompt-form">
+            <label for="prompt">输入原始提示词</label>
+            <textarea id="prompt" name="prompt" rows="6" placeholder="例如：Cyberpunk portrait with neon lighting at sunset"></textarea>
 
-            < label for = "creativity" >扩写创造力< span id = "creativity-value" > 0.5 </ span > </ label >  
-            <输入类型= “范围” id = “创造力”名称= “创造力”最小值= “0”最大值= “1”步长= “0.1”值= “0.5” />       
+            <label for="creativity">扩写创造力 <span id="creativity-value">0.5</span></label>
+            <input type="range" id="creativity" name="creativity" min="0" max="1" step="0.1" value="0.5" />
 
-            <字段集>
-              < legend >互译涉及语言</ legend >
-              {% 语言中的 lang %}
-              <标签类= “复选框” > 
-                <输入类型= “复选框”名称= “语言”值= “{{lang.code}}”已选中/>    
-                < span > {{ lang.label }} </ span >
-              </标签>
-              {% 结束 %}
-            </字段集>
+            <fieldset>
+              <legend>互译涉及语言</legend>
+              {% for lang in languages %}
+              <label class="checkbox">
+                <input type="checkbox" name="languages" value="{{ lang.code }}" checked />
+                <span>{{ lang.label }}</span>
+              </label>
+              {% endfor %}
+            </fieldset>
 
-            < div class = “操作按钮” > 
-              < button type = "submit" id = "generate-button" >生成增强提示词</ button >  
-              <按钮类型= “按钮” id = “展开按钮” class = “辅助” >   
+            <div class="action-buttons">
+              <button type="submit" id="generate-button">生成增强提示词</button>
+              <button type="button" id="expand-button" class="secondary">
                 提示词扩写
-              </按钮>
-              <按钮类型= “按钮” id = “翻译按钮” class = “辅助” >   
+              </button>
+              <button type="button" id="translate-button" class="secondary">
                 多语言互译
-              </按钮>
-            </div>​​
-          </表单>
-        </节>
+              </button>
+            </div>
+          </form>
+        </section>
 
-        <部分类= “面板” id = “结果”隐藏>   
-          < h2 >分析结果</ h2 >
-          < div class = “结果块” > 
-            < h3 >检测语言</ h3 >
-            < p id = “检测到的语言” > </ p > 
-          </div>​​
-          < div class = “结果块” > 
-            < h3 >优化后的提示词</ h3 >
-            < p id = “优化” > </ p > 
-          </div>​​
-          < div class = “结果块” > 
-            < h3 >关键词</ h3 >
-            < ul id = “关键字” > </ul> 
-          </div>​​
-          < div class = “结果块” > 
-            < h3 >提示词扩写（场景关键词）</ h3 >
-            < p id = “expanded” > </ p > 
-          </div>​​
-          < div class = “结果块” > 
-            < h3 >多语言互译</ h3 >
-            < div id = “翻译” > </ div > 
-          </div>​​
-          < div class = “result-block” id = “建议”隐藏>   
-            < h3 >推荐修饰词</ h3 >
-          </div>​​
-        </节>
-      </主要>
-    </div>​​
+        <section class="panel" id="result" hidden>
+          <h2>分析结果</h2>
+          <div class="result-block">
+            <h3>检测语言</h3>
+            <p id="detected-language"></p>
+          </div>
+          <div class="result-block">
+            <h3>优化后的提示词</h3>
+            <p id="optimized"></p>
+          </div>
+          <div class="result-block">
+            <h3>关键词</h3>
+            <ul id="keywords"></ul>
+          </div>
+          <div class="result-block">
+            <h3>提示词扩写（场景关键词）</h3>
+            <p id="expanded"></p>
+          </div>
+          <div class="result-block">
+            <h3>多语言互译</h3>
+            <div id="translations"></div>
+          </div>
+          <div class="result-block" id="suggestions" hidden>
+            <h3>推荐修饰词</h3>
+          </div>
+        </section>
+      </main>
+    </div>
 
-    <脚本>
-      const form = document.getElementById ( “提示表单” )
- ;
-      const resultPanel = document.getElementById ( "结果" ) ;
-      constdetectedLanguageEl = document.getElementById ( “检测到的语言” );
-      const optimizedEl = document.getElementById ( "优化" ) ;
-      const keywordsEl = document.getElementById ( "关键词" ) ;
-      const expandedEl = document.getElementById ( "expanded" ) ;
-      const translationsEl = document.getElementById ( "翻译" ) ;
-      const suggestionsEl = document.getElementById ( "建议" )
- ;
-      const expandButton = document.getElementById ( "expand-button " )
- ;
-      const translateButton = document.getElementById ( "翻译按钮" )
- ;
-      const creativityInput = document.getElementById ( “创造力” ) ;
-      const creativeValue = document.getElementById ( "creativity-value " ) ;
+    <script>
+      const form = document.getElementById("prompt-form");
+      const resultPanel = document.getElementById("result");
+      const detectedLanguageEl = document.getElementById("detected-language");
+      const optimizedEl = document.getElementById("optimized");
+      const keywordsEl = document.getElementById("keywords");
+      const expandedEl = document.getElementById("expanded");
+      const translationsEl = document.getElementById("translations");
+      const suggestionsEl = document.getElementById("suggestions");
+      const expandButton = document.getElementById("expand-button");
+      const translateButton = document.getElementById("translate-button");
+      const creativityInput = document.getElementById("creativity");
+      const creativityValue = document.getElementById("creativity-value");
 
-      创造力输入.addEventListener （“输入” ，（）=> {
-        创造力值.文本内容= 创造力输入.值；
+      creativityInput.addEventListener("input", () => {
+        creativityValue.textContent = creativityInput.value;
       });
 
-      expandButton.addEventListener ( “点击” ，异步()=>
- {
-        const payload = collectFormValues ();
-        const响应 =等待获取（“/api/expand” ，{
- 
-          方法: "POST" ,
-          标头：{ “Content-Type” ：“application/json” }，
-          body ：JSON.stringify （有效负载
-），
+      expandButton.addEventListener("click", async () => {
+        const payload = collectFormValues();
+        const response = await fetch("/api/expand", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
         });
-        const数据 =等待响应。json ()
- ；
-        确保结果面板（）；
-        更新核心部分（数据）；
-        更新翻译（{}）；
+        const data = await response.json();
+        ensureResultPanel();
+        updateCoreSections(data);
+        updateTranslations({});
       });
 
-      translateButton.addEventListener ( “点击” ，异步( )=>{
-        const payload = collectFormValues ();
-        const响应 =等待获取（“/api/translate” ，{
- 
-          方法: "POST" ,
-          标头：{ “Content-Type” ：“application/json” }，
-          body ：JSON.stringify （有效负载
-），
+      translateButton.addEventListener("click", async () => {
+        const payload = collectFormValues();
+        const response = await fetch("/api/translate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
         });
-        const数据 =等待响应。json ()
- ；
-        确保结果面板（）；
-        更新核心部分（数据）；
-        更新翻译（数据。翻译|| {}）；
+        const data = await response.json();
+        ensureResultPanel();
+        updateCoreSections(data);
+        updateTranslations(data.translations || {});
       });
 
-      form.addEventListener ( “提交” ，异步(事件)=>{
-        事件.preventDefault ( );
-        const payload = collectFormValues ();
-        const响应 =等待获取（“/api/process” ，{
- 
-          方法: "POST" ,
-          标头：{ “Content-Type” ：“application/json” }，
-          body ：JSON.stringify （有效负载
-），
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const payload = collectFormValues();
+        const response = await fetch("/api/process", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
         });
 
-        const数据 =等待响应。json ()
- ；
-        渲染结果（数据）；
+        const data = await response.json();
+        renderResult(data);
       });
 
-      函数collectFormValues ( ) {
- 
-        const formData = new FormData (表单);
- 
-        const prompt = formData.get ( “提示” ) ;
-        const创造力 = formData.get ( “创造力” ) ;
-        const languages = formData.getAll ( "语言" ) ;
-        返回{ 提示，创造力，语言 }；
+      function collectFormValues() {
+        const formData = new FormData(form);
+        const prompt = formData.get("prompt");
+        const creativity = formData.get("creativity");
+        const languages = formData.getAll("languages");
+        return { prompt, creativity, languages };
       }
 
-      函数渲染结果（数据）{
- 
-        确保结果面板（）；
-        更新核心部分（数据）；
-        更新翻译（数据。翻译|| {}）；
+      function renderResult(data) {
+        ensureResultPanel();
+        updateCoreSections(data);
+        updateTranslations(data.translations || {});
       }
 
-      函数确保结果面板（）{
- 
-        结果面板。隐藏=假；
+      function ensureResultPanel() {
+        resultPanel.hidden = false;
       }
 
-      函数updateCoreSections (数据) {
- 
-        constdetectedCode = data.detected_language_code
-          ？数据。检测到的语言代码。toUpperCase （）
-          ：”” ；
-        检测到的语言El。文本内容= 检测到的代码
-          ` $ {data.detected_language} ( ${detectedCode} )`
-          ：数据。检测到的语言|| “-” ；
-        优化的El.文本内容= 数据.优化的提示符|| “-” ；
-        关键字El.innerHTML = "" ;
-        (数据.关键词|| []). forEach ( (单词) => {
-          const li = document.createElement ( "li " ) ;
-          li.文本内容=单词;
-          关键字El.appendChild (li);
+      function updateCoreSections(data) {
+        const detectedCode = data.detected_language_code
+          ? data.detected_language_code.toUpperCase()
+          : "";
+        detectedLanguageEl.textContent = detectedCode
+          ? `${data.detected_language} (${detectedCode})`
+          : data.detected_language || "-";
+        optimizedEl.textContent = data.optimized_prompt || "-";
+        keywordsEl.innerHTML = "";
+        (data.keywords || []).forEach((word) => {
+          const li = document.createElement("li");
+          li.textContent = word;
+          keywordsEl.appendChild(li);
         });
-        expandedEl.textContent = 数据.expanded_prompt || “ -” ；
+        expandedEl.textContent = data.expanded_prompt || "-";
 
-        const建议 = 数据。建议|| {};
-        建议El。内部HTML = “” ;
-        如果（对象.键（建议）.长度）{
-          suggestionsEl.hidden = false ;
-​
-          对象.条目（建议）.forEach （（[类别，选项] ）=> {
-            const block = document.createElement ( "div " ) ;
-            block.className = "建议类别" ;
-            块。innerHTML = ` <h4> ${category} </h4>` ；
-            const list = document.createElement ( "ul " ) ;
-            选项.forEach ( (项目) => {
-              const li = document.createElement ( "li " ) ;
-              li.文本内容= 项目
-；
-              列表.appendChild ( li);
+        const suggestions = data.suggestions || {};
+        suggestionsEl.innerHTML = "";
+        if (Object.keys(suggestions).length) {
+          suggestionsEl.hidden = false;
+          Object.entries(suggestions).forEach(([category, options]) => {
+            const block = document.createElement("div");
+            block.className = "suggestion-category";
+            block.innerHTML = `<h4>${category}</h4>`;
+            const list = document.createElement("ul");
+            options.forEach((item) => {
+              const li = document.createElement("li");
+              li.textContent = item;
+              list.appendChild(li);
             });
-            block.appendChild （列表）
- ；
-            suggestionsEl.appendChild (块)
- ;
+            block.appendChild(list);
+            suggestionsEl.appendChild(block);
           });
-        }别的{
-          suggestionsEl.hidden = true ;​
+        } else {
+          suggestionsEl.hidden = true;
         }
       }
 
-      函数更新翻译（翻译条目）{
- 
-        翻译El.内部HTML = “” ;
-        如果（！对象.键（translationEntries）.长度）{
-          const empty = document.createElement ( "p " ) ;
-          空的。className = “empty-hint ”
- ；
-          empty. textContent = "请选择至少一种语言以查看互译结果。" ;
-          translationsEl.appendChild （空）
- ；
-          返回;
+      function updateTranslations(translationEntries) {
+        translationsEl.innerHTML = "";
+        if (!Object.keys(translationEntries).length) {
+          const empty = document.createElement("p");
+          empty.className = "empty-hint";
+          empty.textContent = "请选择至少一种语言以查看互译结果。";
+          translationsEl.appendChild(empty);
+          return;
         }
 
-        对象.entries （translationEntries）.forEach （（[ code，entry] ）=> {
-          const block = document.createElement ( "div " ) ;
-块          。className = “翻译矩阵” ；
+        Object.entries(translationEntries).forEach(([code, entry]) => {
+          const block = document.createElement("div");
+          block.className = "translation-matrix";
 
-          const heading = document.createElement ( "div " ) ;
-标题          。className = “翻译标题” ；
-          标题。innerHTML = ` <strong> ${entry.label} </strong> <span class="tag"> ${code.toUpperCase()} </span>` ；
-          block.appendChild （标题）；
+          const heading = document.createElement("div");
+          heading.className = "translation-heading";
+          heading.innerHTML = `<strong>${entry.label}</strong> <span class="tag">${code.toUpperCase()}</span>`;
+          block.appendChild(heading);
 
-          const base = document.createElement ( “p ” ) ;
-          base.className = "translation-base "
- ;
-          base.textContent = entry.base_text || “ - ” ;
-          block.appendChild （基类）
- ；
+          const base = document.createElement("p");
+          base.className = "translation-base";
+          base.textContent = entry.base_text || "-";
+          block.appendChild(base);
 
-          const mutual = entry. mutual || {};
-          如果（对象.键（相互）.长度）{
-            const list = document.createElement ( "ul " ) ;
-列表            。className = “翻译目标” ；
-            对象.条目（相互）.forEach （（[targetCode，text] ）=> {
-              const li = document.createElement ( "li " ) ;
-              li. innerHTML = `<span class="tag"> ${targetCode.toUpperCase()} </span> ${text || "-" } ` ;
-              列表.appendChild ( li);
+          const mutual = entry.mutual || {};
+          if (Object.keys(mutual).length) {
+            const list = document.createElement("ul");
+            list.className = "translation-targets";
+            Object.entries(mutual).forEach(([targetCode, text]) => {
+              const li = document.createElement("li");
+              li.innerHTML = `<span class="tag">${targetCode.toUpperCase()}</span> ${text || "-"}`;
+              list.appendChild(li);
             });
-            block.appendChild （列表）
- ；
+            block.appendChild(list);
           }
 
-          translationsEl.appendChild (块)
- ;
+          translationsEl.appendChild(block);
         });
       }
-    </脚本>
-  </正文>
+    </script>
+  </body>
 </html>
