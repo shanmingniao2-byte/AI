@@ -1,117 +1,93 @@
-# AI Prompt Enhancer
+# GLM中英互译工具
 
-一个使用 Python (Flask) 编写的网页应用，用于帮助创作者优化 AI 绘图提示词。核心功能包括：
+这是一个基于智谱AI GLM模型API的中英互译网页应用，支持自动检测语言、多种GLM模型选择，并提供翻译历史记录功能。
 
-- 对原始提示词进行结构化整理并优化关键字顺序；
-- 根据关键词提供提示词扩写与场景关键词建议；
-- 输出多语言互译矩阵（英文、中文、西班牙语、法语、日语），便于跨语言协作；
-- 基于关键词类别给出灯光、镜头、情绪和风格的推荐修饰词。
+## 功能特点
 
-## 本地运行
+- 🌐 中英互译，支持自动检测语言
+- 🔑 支持多种GLM模型（GLM-4-Flash、GLM-4.5）
+- 🎨 文生图功能，使用CogView-4模型生成高质量图像
+- 📱 响应式设计，支持移动设备
+- 🔄 一键交换源语言和目标语言
+- 📋 一键复制翻译结果
+- ⌨️ 支持快捷键（Ctrl+Enter）翻译
+- 📝 本地保存翻译历史记录
+- 🔍 搜索历史翻译记录
+- 🗑️ 清空历史记录
 
-以下步骤在 Windows、macOS 与大多数 Linux 发行版上均适用。每个步骤都列出了所需软件、打开方式与验证命令，便于初学者参考。
+## 使用方法
 
-1. **准备命令行工具**
+### 1. 获取API密钥
 
-   | 操作系统 | 需要的软件 | 打开方式 |
-   | --- | --- | --- |
-   | Windows 10/11 | PowerShell（系统自带） | 在“开始菜单”搜索 **PowerShell** → 右键“以管理员身份运行” |
-   | Windows（可选） | Windows Terminal | [Microsoft Store](https://aka.ms/terminal) 安装 → 打开后选择 PowerShell 选项卡 |
-   | macOS | 终端 Terminal（系统自带） | 按 `Command + Space` 搜索 **Terminal** → 回车打开 |
-   | Ubuntu / Debian 等 | GNOME Terminal 或其它终端 | `Ctrl + Alt + T` |
-   | CentOS / Fedora 等 | GNOME Terminal 或其它终端 | `Super` 键打开应用列表 → 搜索 **Terminal** |
+1. 访问 [智谱AI开放平台](https://open.bigmodel.cn/)
+2. 注册并登录账号
+3. 在控制台中获取API密钥（新用户可获得免费额度）
 
-2. **安装必备软件**
+### 2. 设置API密钥
 
-   | 软件 | 用途 | 安装方式 |
-   | --- | --- | --- |
-   | Python 3.9+ | 运行后端、虚拟环境和依赖 | [官方下载页面](https://www.python.org/downloads/)。Windows 安装时勾选 “Add Python to PATH”；macOS 可使用 [Homebrew](https://brew.sh) 执行 `brew install python@3.11`；Linux 可使用发行版包管理器，例如 `sudo apt install python3 python3-venv python3-pip` |
-   | Git | 克隆仓库或管理代码 | [Git 下载页面](https://git-scm.com/downloads)。macOS 可执行 `brew install git`，Linux 例如 `sudo apt install git` |
-   | 文本编辑器（可选） | 查看或修改代码 | 推荐 [VS Code](https://code.visualstudio.com/)，安装后用“打开文件夹”指向仓库目录 |
+1. 在网页顶部的"API密钥"输入框中输入您的API密钥
+2. 点击"保存密钥"按钮
+3. 密钥将保存在浏览器本地存储中，下次访问时无需重新输入
 
-   > 验证安装：在命令行执行 `python --version`（或 `python3 --version`）、`git --version`，确认输出版本号且无报错。
+### 3. 使用翻译功能
 
-3. **获取项目代码**
+1. 在左侧文本框中输入要翻译的文本（最多5000字符）
+2. 选择源语言和目标语言（支持自动检测）
+3. 点击"翻译"按钮或使用快捷键Ctrl+Enter
+4. 翻译结果将显示在右侧文本框中
 
-   - **使用 Git 克隆（推荐）**
+### 4. 文生图功能
 
-     1. 打开合适的 Git 终端工具：
-        - Windows：可使用安装 Git 时附带的 **Git Bash**，或在 PowerShell 中执行 Git 命令。
-        - macOS / Linux：使用系统终端即可。
-     2. 在终端中定位到希望保存项目的目录，例如 `cd ~/Projects`。
-     3. 执行以下命令克隆仓库并进入目录：
+1. 在页面下方的"文生图功能"区域，输入正向提示词（推荐使用英文）
+2. 如有需要，可以在反向提示词框中输入您不希望出现在图像中的内容
+3. 从下拉菜单中选择您想要的图像分辨率（如1024×1024、1024×768等）
+4. 点击"生成图像"按钮，AI将使用CogView-4模型根据您的提示词生成图像
+5. 生成完成后，您可以使用"下载图像"按钮保存生成的图像
 
-        ```bash
-        git clone https://github.com/<your-account>/AI.git
-        cd AI
-        ```
+### 5. 其他功能
 
-     4. 通过 `ls`（Windows 为 `dir`）确认目录中存在 `app.py`、`templates` 等文件。
+- **交换语言**：点击语言选择器中间的"⇄"按钮可交换源语言和目标语言
+- **复制结果**：点击翻译结果右上角的"复制"按钮可复制翻译结果
+- **翻译历史**：所有翻译记录会自动保存在本地，您可以在页面底部的"翻译历史"区域查看
+- **使用历史记录**：点击历史记录中的"使用"按钮可以将历史记录填充到翻译区域
+- **搜索历史记录**：在搜索框中输入关键词可以搜索历史翻译记录
+- **清空历史记录**：点击"清空历史"按钮可以删除所有翻译历史记录
 
-   - **通过浏览器下载 ZIP 压缩包**
+## 技术实现
 
-     1. 打开常用浏览器（Chrome、Edge、Safari 或 Firefox 均可），访问仓库网页 `https://github.com/<your-account>/AI`。
-     2. 点击页面右上角的绿色 **Code** 按钮，在弹出的菜单中选择 **Download ZIP**，浏览器会将压缩包保存到默认下载目录。
-     3. 使用操作系统自带的压缩工具解压：
-        - Windows：右键压缩包 → “全部提取” → 选择解压路径。
-        - macOS：双击压缩包自动解压。
-        - Linux：可在文件管理器中右键解压，或在终端执行 `unzip AI-main.zip`。
-     4. 返回命令行，使用 `cd` 切换到解压后的目录，例如：
+本应用使用以下技术：
 
-        ```bash
-        cd ~/Downloads/AI-main
-        ```
-
-     5. 同样可使用 `ls`/`dir` 核对目录内容是否完整。
-
-4. **创建并启用虚拟环境**
-
-   | 操作系统 | 创建命令 | 激活命令 |
-   | --- | --- | --- |
-   | macOS / Linux | `python3 -m venv .venv` | `source .venv/bin/activate` |
-   | Windows PowerShell | `py -3 -m venv .venv` | `.\.venv\Scripts\Activate.ps1` |
-
-   激活成功后，命令行提示前会出现 `(.venv)`。若在 Windows 出现执行策略限制，可在 PowerShell 以管理员身份运行 `Set-ExecutionPolicy RemoteSigned` 并选择 `Y`，之后重新执行激活命令。
-
-5. **安装依赖**
-
-   在已经激活的虚拟环境中运行：
-
-   ```bash
-   pip install --upgrade pip
-   pip install -r requirements.txt
-   ```
-
-   安装结束后可用 `pip list` 确认依赖是否正确安装。
-
-6. **启动 Flask 开发服务器**
-
-   - **方式 A：使用 Flask CLI**
-
-     | 操作系统 | 启动命令 |
-     | --- | --- |
-     | macOS / Linux | `flask --app app run --debug` |
-     | Windows PowerShell | `$env:FLASK_APP = "app"` 然后执行 `flask run --debug` |
-
-   - **方式 B：直接运行脚本（跨平台通用）**
-
-     ```bash
-     python app.py
-     ```
-
-   如果提示找不到 `flask` 命令，请确认虚拟环境已激活。
-
-7. **访问与停止应用**
-
-   - 终端输出 `Running on http://127.0.0.1:5000`（或 `http://localhost:5000`）后，打开浏览器（Chrome、Edge、Safari 等）访问该地址即可看到网页界面。
-   - 停止服务：切换到运行服务器的终端窗口，按 `Ctrl + C`。Windows PowerShell 会提示是否终止批处理，输入 `Y` 回车。
-   - 再次启动时重复步骤 6；若关闭终端或重启电脑，需先执行步骤 1、3、4 重新进入项目和虚拟环境。
-
-## 自定义词库
-
-- `prompt_engine.py` 中的 `TRANSLATION_MEMORY`、`SYNONYM_MAP`、`SCENE_KEYWORD_EXPANSIONS` 与 `CATEGORY_SUGGESTIONS` 可根据业务需求扩展。
-- 将更多与图像生成相关的关键词加入词库可以提升优化与互译效果。
+- 前端：HTML、CSS、JavaScript
+- API：智谱AI GLM模型API
+- 数据存储：浏览器本地存储（localStorage）
 
 ## 注意事项
 
-本项目示例使用启发式方法和离线词库，适合在无法联网的环境中演示流程。若要接入更强大的 AI 模型或在线翻译服务，可在 `PromptEngine` 中扩展对应逻辑。
+1. 请妥善保管您的API密钥，不要泄露给他人
+2. 本应用直接在浏览器中调用API，不会将您的API密钥发送到任何第三方服务器
+3. 翻译历史记录保存在浏览器本地存储中，清除浏览器数据将会删除这些记录
+4. 免费用户有API调用额度限制，超出限制后需要付费使用
+
+## 浏览器兼容性
+
+本应用支持以下现代浏览器：
+
+- Chrome 60+
+- Firefox 55+
+- Safari 12+
+- Edge 79+
+
+## 许可证
+
+本项目采用MIT许可证，详情请参阅LICENSE文件。
+
+## 贡献
+
+欢迎提交Issue和Pull Request来改进这个项目。
+
+## 联系方式
+
+如有问题或建议，请通过以下方式联系：
+
+- 提交Issue：[GitHub Issues](https://github.com/yourusername/glm-translator/issues)
+- 邮箱：your.email@example.com
