@@ -187,6 +187,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         semanticState.currentSelection = '';
         semanticState.token = 0;
+        }
+        window.englishChineseMapping = [];
+        window.englishChineseSegments = [];
+        window.translationFullTexts = { chinese: '', english: '' };
     });
 
     // 清除反向提示词按钮事件
