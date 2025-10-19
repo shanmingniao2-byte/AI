@@ -149,12 +149,26 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         updateCharCount(); // 更新字符计数
         showNotification('已清除翻译文本', 'success'); // 显示成功通知
+
+        if (comparisonOutputTextarea) {
+            comparisonOutputTextarea.value = '请先输入中文并点击翻译按钮，建立中英文对照关系';
+        }
+        window.englishChineseMapping = [];
+        window.englishChineseSegments = [];
+        window.translationFullTexts = { chinese: '', english: '' };
     });
 
     // 清除翻译结果按钮事件
     clearTranslationBtn.addEventListener('click', () => {
         translationOutputTextarea.value = ''; // 清空翻译结果
         showNotification('已清除翻译结果', 'success'); // 显示成功通知
+
+        if (comparisonOutputTextarea) {
+            comparisonOutputTextarea.value = '请先输入中文并点击翻译按钮，建立中英文对照关系';
+        }
+        window.englishChineseMapping = [];
+        window.englishChineseSegments = [];
+        window.translationFullTexts = { chinese: '', english: '' };
     });
 
     // 清除反向提示词按钮事件
@@ -783,6 +797,9 @@ async function performTranslation() {
     translateBtn.disabled = true;
     translateBtn.innerHTML = '<span class="loading"></span> 翻译中...';
     translationOutputTextarea.value = '正在翻译中，请稍候...';
+    if (comparisonOutputTextarea) {
+        comparisonOutputTextarea.value = '正在建立中英文对照，请稍候...';
+    }
 
     try {
         const sourceLang = sourceLanguageSelect.value;
@@ -977,6 +994,9 @@ async function performTranslation() {
         console.error('翻译错误:', error);
         translationOutputTextarea.value = `翻译失败: ${error.message}`;
         showNotification(`翻译失败: ${error.message}`, 'error');
+        if (comparisonOutputTextarea) {
+            comparisonOutputTextarea.value = '翻译失败，无法建立中英文对照';
+        }
     } finally {
         // 恢复按钮状态
         translateBtn.disabled = false;
@@ -2953,14 +2973,17 @@ function updateTranslationHistory() {
             // 填充源文本和目标文本
             if (sourceTextInput) sourceTextInput.value = item.sourceText;
             if (translationOutputTextarea) translationOutputTextarea.value = item.translatedText;
-            
+
             // 设置语言选择器
             if (sourceLangSelect) sourceLangSelect.value = item.sourceLang;
             if (targetLangSelect) targetLangSelect.value = item.targetLang;
-            
+
             // 更新字符计数
             updateCharCount();
-            
+
+            saveTranslationMapping(item.sourceText, item.translatedText, item.sourceLang, item.targetLang);
+            updateComparisonOutput('');
+
             // 显示通知
             showNotification('已使用历史记录', 'success');
         });
@@ -3151,14 +3174,17 @@ function initTranslationHistory() {
                             // 填充源文本和目标文本
                             if (sourceTextInput) sourceTextInput.value = item.sourceText;
                             if (translationOutputTextarea) translationOutputTextarea.value = item.translatedText;
-                            
+
                             // 设置语言选择器
                             if (sourceLangSelect) sourceLangSelect.value = item.sourceLang;
                             if (targetLangSelect) targetLangSelect.value = item.targetLang;
-                            
+
                             // 更新字符计数
                             updateCharCount();
-                            
+
+                            saveTranslationMapping(item.sourceText, item.translatedText, item.sourceLang, item.targetLang);
+                            updateComparisonOutput('');
+
                             // 显示通知
                             showNotification('已使用历史记录', 'success');
                         });
@@ -3427,19 +3453,36 @@ function showChineseTranslation(event) {
 // 保存翻译功能的中英文对照关系
 function saveTranslationMapping(sourceText, translatedText, sourceLang, targetLang) {
     console.log('===== saveTranslationMapping 调用开始 =====');
-    
+
     // 参数检查
     if (!sourceText || !translatedText || !sourceLang || !targetLang) {
         console.error('参数不完整，无法保存对照关系');
         return;
     }
-    
-    // 只处理中英文对照关系
-    if ((sourceLang === 'zh' && targetLang === 'en') ||
-        (sourceLang === 'en' && targetLang === 'zh')) {
 
-        const chineseText = sourceLang === 'zh' ? sourceText : translatedText;
-        const englishText = sourceLang === 'zh' ? translatedText : sourceText;
+    // 当选择自动检测时，尝试基于文本内容推断语言
+    let detectedSourceLang = sourceLang;
+    let detectedTargetLang = targetLang;
+
+    if (sourceLang === 'auto') {
+        const hasChinese = /[\u4e00-\u9fa5]/.test(sourceText);
+        const hasEnglish = /[A-Za-z]/.test(sourceText);
+
+        if (hasChinese && targetLang === 'en') {
+            detectedSourceLang = 'zh';
+            detectedTargetLang = 'en';
+        } else if (hasEnglish && targetLang === 'zh') {
+            detectedSourceLang = 'en';
+            detectedTargetLang = 'zh';
+        }
+    }
+
+    // 只处理中英文对照关系
+    if ((detectedSourceLang === 'zh' && detectedTargetLang === 'en') ||
+        (detectedSourceLang === 'en' && detectedTargetLang === 'zh')) {
+
+        const chineseText = detectedSourceLang === 'zh' ? sourceText : translatedText;
+        const englishText = detectedSourceLang === 'zh' ? translatedText : sourceText;
 
         // 保存完整文本，便于无选中时直接显示
         window.translationFullTexts = {
@@ -3523,6 +3566,9 @@ function saveTranslationMapping(sourceText, translatedText, sourceLang, targetLa
         console.log('跳过非中英文对照关系的保存');
         window.englishChineseSegments = [];
         window.translationFullTexts = { chinese: '', english: '' };
+        if (comparisonOutputTextarea) {
+            comparisonOutputTextarea.value = '当前仅支持中文与英文的对照显示，请先进行对应语言的翻译';
+        }
     }
     
     console.log('===== saveTranslationMapping 调用结束 =====');
