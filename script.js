@@ -177,20 +177,18 @@ document.addEventListener('DOMContentLoaded', () => {
             comparisonOutputTextarea.dataset.loading = 'false';
             comparisonOutputTextarea.dataset.matchSource = 'reset';
         }
+
         window.englishChineseMapping = [];
         window.englishChineseSegments = [];
         window.chineseSearchSegments = [];
         window.translationFullTexts = { chinese: '', english: '' };
+
         const semanticState = ensureSemanticSearchState();
         if (semanticState.cache instanceof Map) {
             semanticState.cache.clear();
         }
         semanticState.currentSelection = '';
         semanticState.token = 0;
-        }
-        window.englishChineseMapping = [];
-        window.englishChineseSegments = [];
-        window.translationFullTexts = { chinese: '', english: '' };
     });
 
     // 清除反向提示词按钮事件
