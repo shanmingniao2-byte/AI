@@ -209,14 +209,31 @@ body.dark-mode .no-history {
     line-height: 1.5;
     background-color: #f9f9f9;
     color: #333;
+    white-space: pre-wrap;
     resize: vertical;
     transition: all 0.3s ease;
+}
+
+.comparison-textarea[data-loading="true"] {
+    background-image: linear-gradient(120deg, #f9f9f9 25%, #f0f0f0 50%, #f9f9f9 75%);
+    background-size: 200% 100%;
+    animation: comparison-loading-shimmer 1.6s linear infinite;
+    color: #333;
 }
 
 .comparison-textarea:focus {
     outline: none;
     border-color: #6b7280;
     box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.1);
+}
+
+@keyframes comparison-loading-shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
 }
 
 /* 夜间模式下的对照文本框样式 */
@@ -236,6 +253,11 @@ body.dark-mode .comparison-textarea {
     background-color: #333;
     color: #e0e0e0;
     border-color: #555;
+}
+
+body.dark-mode .comparison-textarea[data-loading="true"] {
+    background-image: linear-gradient(120deg, #3a3a3a 25%, #2d2d2d 50%, #3a3a3a 75%);
+    color: #e0e0e0;
 }
 
 body.dark-mode .comparison-textarea:focus {
