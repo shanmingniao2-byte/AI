@@ -209,6 +209,7 @@ body.dark-mode .no-history {
     line-height: 1.5;
     background-color: #f9f9f9;
     color: #333;
+    white-space: pre-wrap;
     resize: vertical;
     transition: all 0.3s ease;
 }
