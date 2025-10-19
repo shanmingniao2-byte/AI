@@ -3453,19 +3453,36 @@ function showChineseTranslation(event) {
 // 保存翻译功能的中英文对照关系
 function saveTranslationMapping(sourceText, translatedText, sourceLang, targetLang) {
     console.log('===== saveTranslationMapping 调用开始 =====');
-    
+
     // 参数检查
     if (!sourceText || !translatedText || !sourceLang || !targetLang) {
         console.error('参数不完整，无法保存对照关系');
         return;
     }
-    
-    // 只处理中英文对照关系
-    if ((sourceLang === 'zh' && targetLang === 'en') ||
-        (sourceLang === 'en' && targetLang === 'zh')) {
 
-        const chineseText = sourceLang === 'zh' ? sourceText : translatedText;
-        const englishText = sourceLang === 'zh' ? translatedText : sourceText;
+    // 当选择自动检测时，尝试基于文本内容推断语言
+    let detectedSourceLang = sourceLang;
+    let detectedTargetLang = targetLang;
+
+    if (sourceLang === 'auto') {
+        const hasChinese = /[\u4e00-\u9fa5]/.test(sourceText);
+        const hasEnglish = /[A-Za-z]/.test(sourceText);
+
+        if (hasChinese && targetLang === 'en') {
+            detectedSourceLang = 'zh';
+            detectedTargetLang = 'en';
+        } else if (hasEnglish && targetLang === 'zh') {
+            detectedSourceLang = 'en';
+            detectedTargetLang = 'zh';
+        }
+    }
+
+    // 只处理中英文对照关系
+    if ((detectedSourceLang === 'zh' && detectedTargetLang === 'en') ||
+        (detectedSourceLang === 'en' && detectedTargetLang === 'zh')) {
+
+        const chineseText = detectedSourceLang === 'zh' ? sourceText : translatedText;
+        const englishText = detectedSourceLang === 'zh' ? translatedText : sourceText;
 
         // 保存完整文本，便于无选中时直接显示
         window.translationFullTexts = {
