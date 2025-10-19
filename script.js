@@ -37,6 +37,7 @@ const sourceTextInput = document.getElementById('source-text'); // 源文本输�
 const charCountSpan = document.getElementById('char-count'); // 字符计数显示元素
 const translateBtn = document.getElementById('translate-btn'); // 翻译按钮
 const translationOutputTextarea = document.getElementById('translation-output'); // 翻译结果输出框
+const comparisonOutputTextarea = document.getElementById('comparison-output'); // 对照原文输出框
 const copyTranslationBtn = document.getElementById('copy-translation'); // 复制翻译结果按钮
 const modelSelect = document.getElementById('model-select'); // 模型选择器
 
@@ -3619,37 +3620,37 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         updateComparisonOutput('');
     }, 100); // 延迟100ms确保DOM完全渲染
-const translationOutputTextarea = document.getElementById('translation-output'); // 翻译结果输出框
-const comparisonOutputTextarea = document.getElementById('comparison-output'); // 对照原文输出框
 
-// 监听翻译结果输出框的选中文本
-function updateComparisonText() {
-    const selectedText = window.getSelection().toString().trim(); // 获取选中的文本
-    
-    if (selectedText) {
-        const sourceText = document.getElementById('source-text').value.trim(); // 获取源中文文本
-        const translationText = translationOutputTextarea.value.trim(); // 获取翻译后的英文文本
-        
-        // 通过简单的匹配来查找源文本中的对应部分
-        let matchingChineseText = findMatchingChineseText(selectedText, sourceText, translationText);
-        
-        // 更新对照文本框的内容
-        comparisonOutputTextarea.value = matchingChineseText;
+    // 监听翻译结果输出框的选中文本
+    function updateComparisonText() {
+        if (!translationOutputTextarea || !comparisonOutputTextarea) {
+            return;
+        }
+
+        let selectedText = '';
+
+        // 优先从textarea的selectionStart/selectionEnd读取选中内容
+        if (document.activeElement === translationOutputTextarea) {
+            const { selectionStart, selectionEnd, value } = translationOutputTextarea;
+            if (typeof selectionStart === 'number' && typeof selectionEnd === 'number' && selectionStart !== selectionEnd) {
+                selectedText = value.substring(selectionStart, selectionEnd).trim();
+            }
+        }
+
+        // 回退到window.getSelection，兼容鼠标拖拽选择后焦点丢失的情况
+        if (!selectedText) {
+            selectedText = window.getSelection().toString().trim();
+        }
+
+        // 委托已有的对照更新逻辑，根据选中文本刷新中文原文
+        updateComparisonOutput(selectedText);
     }
-}
 
-// 一个简单的匹配函数，根据英文文本返回对应的中文部分
-function findMatchingChineseText(englishText, sourceText, translationText) {
-    // 这里可以根据需要进一步实现更复杂的匹配逻辑
-    // 例如，你可以通过正则表达式或者其他方法来匹配具体的翻译内容
-    // 目前，假设直接返回源文本作为示例
-    return sourceText; // 作为占位符，返回所有中文文本
-}
+    // 事件监听：当用户选择翻译结果中的英文文本时，更新对照文本框
+    translationOutputTextarea.addEventListener('mouseup', updateComparisonText);
+    translationOutputTextarea.addEventListener('keyup', updateComparisonText); // 支持键盘选择
+    translationOutputTextarea.addEventListener('select', updateComparisonText); // 处理键盘快捷键选择
 
-// 事件监听：当用户选择翻译结果中的英文文本时，更新对照文本框
-translationOutputTextarea.addEventListener('mouseup', updateComparisonText); 
-translationOutputTextarea.addEventListener('keyup', updateComparisonText); // 支持键盘选择
-    
     console.log('应用初始化完成');
 });
 
