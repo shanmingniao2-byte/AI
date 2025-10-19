@@ -152,10 +152,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (comparisonOutputTextarea) {
             comparisonOutputTextarea.value = '请先输入中文并点击翻译按钮，建立中英文对照关系';
+            comparisonOutputTextarea.dataset.loading = 'false';
+            comparisonOutputTextarea.dataset.matchSource = 'reset';
         }
         window.englishChineseMapping = [];
         window.englishChineseSegments = [];
+        window.chineseSearchSegments = [];
         window.translationFullTexts = { chinese: '', english: '' };
+        const semanticState = ensureSemanticSearchState();
+        if (semanticState.cache instanceof Map) {
+            semanticState.cache.clear();
+        }
+        semanticState.currentSelection = '';
+        semanticState.token = 0;
     });
 
     // 清除翻译结果按钮事件
@@ -165,6 +174,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (comparisonOutputTextarea) {
             comparisonOutputTextarea.value = '请先输入中文并点击翻译按钮，建立中英文对照关系';
+            comparisonOutputTextarea.dataset.loading = 'false';
+            comparisonOutputTextarea.dataset.matchSource = 'reset';
+        }
+        window.englishChineseMapping = [];
+        window.englishChineseSegments = [];
+        window.chineseSearchSegments = [];
+        window.translationFullTexts = { chinese: '', english: '' };
+        const semanticState = ensureSemanticSearchState();
+        if (semanticState.cache instanceof Map) {
+            semanticState.cache.clear();
+        }
+        semanticState.currentSelection = '';
+        semanticState.token = 0;
         }
         window.englishChineseMapping = [];
         window.englishChineseSegments = [];
@@ -2132,6 +2154,359 @@ function buildSegmentMappings(chineseText, englishText) {
     return segments;
 }
 
+// 确保语义检索所需的全局状态存在
+function ensureSemanticSearchState() {
+    if (!window.semanticSearchState || typeof window.semanticSearchState !== 'object') {
+        window.semanticSearchState = {};
+    }
+
+    if (!(window.semanticSearchState.cache instanceof Map)) {
+        window.semanticSearchState.cache = new Map();
+    }
+
+    if (typeof window.semanticSearchState.token !== 'number') {
+        window.semanticSearchState.token = 0;
+    }
+
+    if (typeof window.semanticSearchState.currentSelection !== 'string') {
+        window.semanticSearchState.currentSelection = '';
+    }
+
+    if (typeof window.semanticSearchState.lastQueryTimestamp !== 'number') {
+        window.semanticSearchState.lastQueryTimestamp = 0;
+    }
+
+    return window.semanticSearchState;
+}
+
+// 计算英文片段之间的相似度，用于初步筛选候选段落
+function computeEnglishSimilarity(selectedLower, candidateLower) {
+    if (!selectedLower || !candidateLower) {
+        return 0;
+    }
+
+    if (selectedLower === candidateLower) {
+        return 1;
+    }
+
+    let score = 0;
+
+    if (candidateLower.includes(selectedLower)) {
+        score = Math.max(score, selectedLower.length / candidateLower.length);
+    }
+
+    if (selectedLower.includes(candidateLower)) {
+        score = Math.max(score, candidateLower.length / selectedLower.length);
+    }
+
+    const selectedWords = selectedLower.split(/\s+/).filter(Boolean);
+    const candidateWords = candidateLower.split(/\s+/).filter(Boolean);
+
+    if (selectedWords.length && candidateWords.length) {
+        const candidateSet = new Set(candidateWords);
+        const commonWords = selectedWords.filter(word => candidateSet.has(word));
+        if (commonWords.length) {
+            score = Math.max(score, commonWords.length / selectedWords.length);
+        }
+    }
+
+    const toBigrams = (text) => {
+        if (!text) return [];
+        if (text.length < 2) {
+            return [text];
+        }
+        const grams = [];
+        for (let i = 0; i < text.length - 1; i++) {
+            grams.push(text.slice(i, i + 2));
+        }
+        return grams;
+    };
+
+    const selectedBigrams = toBigrams(selectedLower);
+    const candidateBigrams = toBigrams(candidateLower);
+
+    if (selectedBigrams.length && candidateBigrams.length) {
+        const candidateMap = new Map();
+        candidateBigrams.forEach(bg => {
+            candidateMap.set(bg, (candidateMap.get(bg) || 0) + 1);
+        });
+
+        let overlap = 0;
+        selectedBigrams.forEach(bg => {
+            const count = candidateMap.get(bg) || 0;
+            if (count > 0) {
+                overlap += 1;
+                candidateMap.set(bg, count - 1);
+            }
+        });
+
+        const dice = (2 * overlap) / (selectedBigrams.length + candidateBigrams.length);
+        score = Math.max(score, dice * 0.8);
+    }
+
+    return score;
+}
+
+// 去重候选段落，保留评分最高的内容
+function deduplicateCandidates(candidates) {
+    const seen = new Map();
+
+    candidates.forEach(candidate => {
+        if (!candidate || !candidate.chinese) {
+            return;
+        }
+
+        const key = candidate.chinese.trim();
+        if (!key) {
+            return;
+        }
+
+        const existing = seen.get(key);
+        if (!existing || existing.score < candidate.score) {
+            seen.set(key, candidate);
+        }
+    });
+
+    return Array.from(seen.values());
+}
+
+// 构建语义检索提示词
+function buildSemanticPrompt(selectedText, candidates) {
+    const truncate = (text, maxLength) => {
+        if (!text) return '';
+        const normalized = text.replace(/\s+/g, ' ').trim();
+        if (normalized.length <= maxLength) {
+            return normalized;
+        }
+        return normalized.slice(0, maxLength) + '…';
+    };
+
+    const candidateText = candidates.map((candidate, index) => {
+        const rank = index + 1;
+        const chineseSnippet = truncate(candidate.chinese, 220) || '（无中文内容）';
+        const englishSnippet = truncate(candidate.english || '', 220) || '（无英文参考）';
+        const scoreHint = typeof candidate.score === 'number'
+            ? `候选相似度: ${(candidate.score * 100).toFixed(1)}%`
+            : '';
+
+        return `候选${rank}：\n中文：${chineseSnippet}\n英文参考：${englishSnippet}\n${scoreHint}`;
+    }).join('\n\n');
+
+    return `你是一位专业的双语检索助手。请在最多返回120字的JSON文本中给出与你理解最匹配的中文段落及其编号。\n- 输出JSON格式: {"bestIndex": 数字, "bestChinese": "中文原文", "confidence": 0-1之间的小数, "reason": "简短说明"}\n- bestIndex使用1开始的编号，对应下方候选列表。\n- 如果没有特别匹配的中文，请选择最接近的一段并解释原因。\n\n待比对英文提示词：\n"""${truncate(selectedText, 400)}"""\n\n可选的中文原文候选段落：\n${candidateText}`;
+}
+
+// 请求GLM进行语义匹配
+async function fetchSemanticMatchFromGLM(selectedText, candidates, token) {
+    if (!apiKey) {
+        throw new Error('缺少智谱API密钥，无法执行语义匹配');
+    }
+
+    const requestBody = {
+        model: 'glm-4',
+        messages: [
+            {
+                role: 'system',
+                content: '你是一位严谨的中英文比对助手，请务必按照要求输出JSON，避免额外说明。'
+            },
+            {
+                role: 'user',
+                content: buildSemanticPrompt(selectedText, candidates)
+            }
+        ],
+        temperature: 0.1,
+        stream: false
+    };
+
+    const response = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+        let errorMessage = `语义检索请求失败，状态码: ${response.status}`;
+        try {
+            const errorData = await response.json();
+            if (errorData?.error?.message) {
+                errorMessage = errorData.error.message;
+            }
+        } catch (err) {
+            // 忽略解析错误
+        }
+        throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    const content = data?.choices?.[0]?.message?.content;
+    if (!content || typeof content !== 'string') {
+        throw new Error('语义检索响应格式异常: 缺少文本内容');
+    }
+
+    return { raw: content, token };
+}
+
+// 解析语义检索的返回内容
+function parseSemanticMatchResponse(responseText, candidates) {
+    if (!responseText) {
+        return null;
+    }
+
+    let parsed = null;
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+        try {
+            parsed = JSON.parse(jsonMatch[0]);
+        } catch (error) {
+            console.warn('解析语义匹配JSON失败，尝试文本降级', error);
+        }
+    }
+
+    if (!parsed || typeof parsed !== 'object') {
+        const indexMatch = responseText.match(/(?:候选|段落|选项|index)\s*(\d+)/i);
+        if (indexMatch) {
+            const idx = parseInt(indexMatch[1], 10);
+            if (!Number.isNaN(idx) && candidates[idx - 1]) {
+                return {
+                    bestChinese: candidates[idx - 1].chinese,
+                    bestIndex: idx - 1,
+                    confidence: null,
+                    origin: 'fallback-text'
+                };
+            }
+        }
+
+        if (candidates.length) {
+            return {
+                bestChinese: candidates[0].chinese,
+                bestIndex: 0,
+                confidence: null,
+                origin: 'fallback-default'
+            };
+        }
+
+        return null;
+    }
+
+    let bestIndex = -1;
+    let bestChinese = '';
+
+    if (typeof parsed.bestIndex === 'number') {
+        bestIndex = Math.round(parsed.bestIndex) - 1;
+    } else if (typeof parsed.index === 'number') {
+        bestIndex = Math.round(parsed.index) - 1;
+    } else if (typeof parsed.bestId === 'string' && /^\d+$/.test(parsed.bestId)) {
+        bestIndex = parseInt(parsed.bestId, 10) - 1;
+    }
+
+    if (bestIndex >= 0 && bestIndex < candidates.length) {
+        bestChinese = candidates[bestIndex].chinese;
+    }
+
+    if (!bestChinese && typeof parsed.bestChinese === 'string') {
+        bestChinese = parsed.bestChinese.trim();
+    } else if (!bestChinese && typeof parsed.chinese === 'string') {
+        bestChinese = parsed.chinese.trim();
+    }
+
+    if (!bestChinese && candidates.length) {
+        bestChinese = candidates[0].chinese;
+        bestIndex = 0;
+    }
+
+    return {
+        bestChinese,
+        bestIndex: bestIndex >= 0 ? bestIndex : null,
+        confidence: typeof parsed.confidence === 'number' ? parsed.confidence : null,
+        origin: 'api-json',
+        reason: typeof parsed.reason === 'string' ? parsed.reason : ''
+    };
+}
+
+// 将语义匹配结果写入界面并缓存
+function applySemanticMatchResult(selection, matchResult, token) {
+    const comparisonOutput = document.getElementById('comparison-output');
+    if (!comparisonOutput || !matchResult || !matchResult.bestChinese) {
+        return;
+    }
+
+    const state = ensureSemanticSearchState();
+    if (state.currentSelection !== selection || state.token !== token) {
+        return;
+    }
+
+    comparisonOutput.value = matchResult.bestChinese;
+    comparisonOutput.dataset.loading = 'false';
+    comparisonOutput.dataset.matchSource = matchResult.origin || 'api';
+
+    const cacheKey = selection.toLowerCase();
+    if (state.cache instanceof Map) {
+        state.cache.set(cacheKey, {
+            bestChinese: matchResult.bestChinese,
+            confidence: matchResult.confidence || null,
+            origin: matchResult.origin || 'api',
+            timestamp: Date.now()
+        });
+    }
+}
+
+// 调度语义检索（带缓存和防抖）
+function scheduleSemanticSearch(selection, candidates, baseResult) {
+    if (!selection || !candidates || !candidates.length) {
+        return;
+    }
+
+    const state = ensureSemanticSearchState();
+    const comparisonOutput = document.getElementById('comparison-output');
+
+    if (comparisonOutput) {
+        comparisonOutput.dataset.loading = 'true';
+        if (baseResult && baseResult.trim()) {
+            comparisonOutput.value = baseResult.trim();
+        }
+    }
+
+    const cacheKey = selection.toLowerCase();
+    if (state.cache instanceof Map && state.cache.has(cacheKey)) {
+        const cached = state.cache.get(cacheKey);
+        if (cached && cached.bestChinese) {
+            comparisonOutput.value = cached.bestChinese;
+            comparisonOutput.dataset.loading = 'false';
+            comparisonOutput.dataset.matchSource = cached.origin || 'cache';
+            return;
+        }
+    }
+
+    state.currentSelection = selection;
+    state.token += 1;
+    const currentToken = state.token;
+
+    if (state.debounceTimer) {
+        clearTimeout(state.debounceTimer);
+    }
+
+    state.debounceTimer = setTimeout(() => {
+        fetchSemanticMatchFromGLM(selection, candidates, currentToken)
+            .then(({ raw }) => {
+                const parsed = parseSemanticMatchResponse(raw, candidates);
+                if (parsed) {
+                    applySemanticMatchResult(selection, parsed, currentToken);
+                } else if (comparisonOutput) {
+                    comparisonOutput.dataset.loading = 'false';
+                }
+            })
+            .catch(error => {
+                console.error('语义检索失败:', error);
+                if (comparisonOutput) {
+                    comparisonOutput.dataset.loading = 'false';
+                    comparisonOutput.dataset.matchSource = 'heuristic';
+                }
+            });
+    }, 220);
+}
+
 // 扩写图片生成的提示词
 async function expandImagePrompt() {
     const originalPrompt = imagePromptOutput.value;
@@ -3243,17 +3618,22 @@ function updateComparisonOutput(selectedText) {
         mapping && typeof mapping === 'object' && mapping.english && mapping.chinese
     );
     const segmentMappings = Array.isArray(window.englishChineseSegments) ? window.englishChineseSegments : [];
+    const chineseSegments = Array.isArray(window.chineseSearchSegments) ? window.chineseSearchSegments : [];
     const fullChineseText = (window.translationFullTexts && window.translationFullTexts.chinese) || (validMappings[0]?.chinese || '');
     const fullEnglishText = (window.translationFullTexts && window.translationFullTexts.english) || '';
 
     if (!validMappings.length && !segmentMappings.length) {
         comparisonOutput.value = '请先输入中文并点击翻译按钮，建立中英文对照关系';
+        comparisonOutput.dataset.loading = 'false';
+        comparisonOutput.dataset.matchSource = 'empty';
         return;
     }
 
     const trimmedSelection = selectedText ? selectedText.trim() : '';
     if (!trimmedSelection) {
         comparisonOutput.value = fullChineseText || '请先输入中文并点击翻译按钮，建立中英文对照关系';
+        comparisonOutput.dataset.matchSource = 'full';
+        comparisonOutput.dataset.loading = 'false';
         return;
     }
 
@@ -3281,6 +3661,7 @@ function updateComparisonOutput(selectedText) {
     }
 
     let matchedChinese = '';
+    let matchedByRange = false;
 
     if (selectionStart !== null && selectionEnd !== null && selectionEnd > selectionStart) {
         const midpoint = Math.floor((selectionStart + selectionEnd) / 2);
@@ -3290,38 +3671,73 @@ function updateComparisonOutput(selectedText) {
         );
         if (rangeMatch) {
             matchedChinese = rangeMatch.chinese;
+            matchedByRange = true;
         }
     }
 
-    if (!matchedChinese) {
-        let bestScore = -1;
-        validMappings.forEach(mapping => {
-            if (!mapping || !mapping.english || !mapping.chinese) return;
-            const englishLower = mapping.english.toLowerCase();
-            let score = -1;
+    const candidates = [];
 
-            if (englishLower === normalizedSelection) {
-                score = 1;
-            } else if (englishLower.includes(normalizedSelection)) {
-                score = normalizedSelection.length / englishLower.length;
-            } else if (normalizedSelection.includes(englishLower)) {
-                score = englishLower.length / normalizedSelection.length;
-            } else {
-                const englishWords = englishLower.split(/\s+/).filter(Boolean);
-                const selectedWords = normalizedSelection.split(/\s+/).filter(Boolean);
-                if (englishWords.length && selectedWords.length) {
-                    const commonWords = selectedWords.filter(word => englishWords.includes(word));
-                    if (commonWords.length) {
-                        score = commonWords.length / selectedWords.length * 0.6;
-                    }
-                }
-            }
+    segmentMappings.forEach((segment, index) => {
+        if (!segment || !segment.chinese) {
+            return;
+        }
+        const englishLower = (segment.english || '').toLowerCase();
+        const score = computeEnglishSimilarity(normalizedSelection, englishLower);
 
-            if (score > bestScore) {
-                bestScore = score;
-                matchedChinese = mapping.chinese;
-            }
+        if (score > 0) {
+            candidates.push({
+                chinese: segment.chinese,
+                english: segment.english || '',
+                score: score + (index === 0 ? 0.05 : 0),
+                origin: 'segment'
+            });
+        }
+    });
+
+    validMappings.forEach(mapping => {
+        if (!mapping || !mapping.english || !mapping.chinese) {
+            return;
+        }
+
+        const englishLower = mapping.english.toLowerCase();
+        const score = computeEnglishSimilarity(normalizedSelection, englishLower);
+        if (score > 0) {
+            candidates.push({
+                chinese: mapping.chinese,
+                english: mapping.english,
+                score: score * 0.95,
+                origin: mapping.type || 'mapping'
+            });
+        }
+    });
+
+    // 如果还没有任何候选，则尝试添加完整文本或中文段落作为参考
+    if (!candidates.length && fullChineseText) {
+        candidates.push({
+            chinese: fullChineseText,
+            english: fullEnglishText || '',
+            score: 0.2,
+            origin: 'full'
         });
+    }
+
+    if (!candidates.length && chineseSegments.length) {
+        chineseSegments.slice(0, 5).forEach(segment => {
+            candidates.push({
+                chinese: segment,
+                english: '',
+                score: 0.1,
+                origin: 'chinese-only'
+            });
+        });
+    }
+
+    const dedupedCandidates = deduplicateCandidates(candidates)
+        .filter(candidate => candidate && candidate.chinese)
+        .sort((a, b) => (b.score || 0) - (a.score || 0));
+
+    if (!matchedChinese && dedupedCandidates.length) {
+        matchedChinese = dedupedCandidates[0].chinese;
     }
 
     if (!matchedChinese) {
@@ -3329,6 +3745,14 @@ function updateComparisonOutput(selectedText) {
     }
 
     comparisonOutput.value = matchedChinese;
+    comparisonOutput.dataset.matchSource = matchedByRange ? 'range' : 'heuristic';
+
+    if (apiKey && dedupedCandidates.length && trimmedSelection.length >= 2) {
+        const topCandidates = dedupedCandidates.slice(0, 6);
+        scheduleSemanticSearch(trimmedSelection, topCandidates, matchedChinese);
+    } else {
+        comparisonOutput.dataset.loading = 'false';
+    }
 }
 
 // 创建并显示中英文对照提示框
@@ -3363,6 +3787,10 @@ function showChineseTranslation(event) {
         return;
     }
 
+    const pointerEvent = event && typeof event === 'object' && typeof event.clientX === 'number'
+        ? event
+        : null;
+
     const comparisonOutput = document.getElementById('comparison-output');
     const correspondingChinese = comparisonOutput ? comparisonOutput.value.trim() : '';
 
@@ -3380,17 +3808,21 @@ function showChineseTranslation(event) {
         existingTooltip.remove();
     }
     
+    if (!pointerEvent) {
+        return;
+    }
+
     // 创建新的提示框
     const tooltip = document.createElement('div');
     tooltip.id = 'chinese-tooltip';
     tooltip.className = 'chinese-tooltip';
     tooltip.textContent = correspondingChinese;
-    
+
     // 设置提示框样式
     tooltip.style.cssText = `
         position: absolute;
-        left: ${event.clientX - 10}px;
-        top: ${event.clientY - 40}px;
+        left: ${pointerEvent.clientX - 10}px;
+        top: ${pointerEvent.clientY - 40}px;
         background-color: rgba(0, 0, 0, 0.9);
         color: white;
         padding: 8px 12px;
@@ -3492,6 +3924,13 @@ function saveTranslationMapping(sourceText, translatedText, sourceLang, targetLa
 
         // 预计算区间映射
         window.englishChineseSegments = buildSegmentMappings(chineseText || '', englishText || '');
+        window.chineseSearchSegments = splitTextIntoSegments(chineseText || '', 'zh');
+
+        const semanticState = ensureSemanticSearchState();
+        if (semanticState.cache instanceof Map) {
+            semanticState.cache.clear();
+        }
+        semanticState.currentSelection = '';
 
         // 强制使用window对象确保全局访问
         window.englishChineseMapping = window.englishChineseMapping || [];
@@ -3565,12 +4004,20 @@ function saveTranslationMapping(sourceText, translatedText, sourceLang, targetLa
     } else {
         console.log('跳过非中英文对照关系的保存');
         window.englishChineseSegments = [];
+        window.chineseSearchSegments = [];
         window.translationFullTexts = { chinese: '', english: '' };
         if (comparisonOutputTextarea) {
             comparisonOutputTextarea.value = '当前仅支持中文与英文的对照显示，请先进行对应语言的翻译';
+            comparisonOutputTextarea.dataset.loading = 'false';
+            comparisonOutputTextarea.dataset.matchSource = 'unsupported';
         }
+        const semanticState = ensureSemanticSearchState();
+        if (semanticState.cache instanceof Map) {
+            semanticState.cache.clear();
+        }
+        semanticState.currentSelection = '';
     }
-    
+
     console.log('===== saveTranslationMapping 调用结束 =====');
 }
 
@@ -3637,9 +4084,15 @@ document.addEventListener('DOMContentLoaded', () => {
         window.englishChineseSegments = [];
     }
 
+    if (!Array.isArray(window.chineseSearchSegments)) {
+        window.chineseSearchSegments = [];
+    }
+
     if (!window.translationFullTexts || typeof window.translationFullTexts !== 'object') {
         window.translationFullTexts = { chinese: '', english: '' };
     }
+
+    ensureSemanticSearchState();
 
     // 直接使用window.englishChineseMapping，避免创建额外的全局变量
     console.log('对照关系数组初始化完成，当前长度:', window.englishChineseMapping.length);
