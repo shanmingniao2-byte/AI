@@ -2025,10 +2025,92 @@ function updatePromptCharCount() {
     promptCharCounter.removeAttribute('title');
 }
 
-// 存储中英文对照关系的数据结构
-let englishChineseMapping = [];
 // 调试模式标志，用于开发时查看详细信息
 const DEBUG_MODE = true; // 设置为true可以看到调试日志
+
+// 辅助：按照语言特点对文本进行分段，便于定位选中内容
+function splitTextIntoSegments(text, lang) {
+    if (!text) return [];
+
+    const trimmed = text.trim();
+    if (!trimmed) return [];
+
+    const pattern = lang === 'zh'
+        ? /[^。！？；\n]+[。！？；]?/g
+        : /[^.!?;:\n]+[.!?;:]?/g;
+
+    const matches = trimmed.match(pattern);
+    if (!matches) {
+        return [trimmed];
+    }
+
+    return matches
+        .map(segment => segment.trim())
+        .filter(segment => segment.length > 0);
+}
+
+// 根据中英文文本生成区间映射，用于快速定位选中内容对应的原文
+function buildSegmentMappings(chineseText, englishText) {
+    const chineseSegments = splitTextIntoSegments(chineseText, 'zh');
+    const englishSegments = splitTextIntoSegments(englishText, 'en');
+
+    const fullEnglishLower = englishText ? englishText.toLowerCase() : '';
+    const segments = [];
+    let searchIndex = 0;
+
+    const maxLength = Math.max(englishSegments.length, chineseSegments.length);
+
+    for (let i = 0; i < maxLength; i++) {
+        const englishSegment = englishSegments[i] || '';
+        const chineseSegment = chineseSegments[i] || '';
+        const trimmedEnglish = englishSegment.trim();
+        const trimmedChinese = chineseSegment.trim();
+
+        if (!trimmedEnglish && !trimmedChinese) {
+            continue;
+        }
+
+        let start = 0;
+        let end = 0;
+
+        if (trimmedEnglish && fullEnglishLower) {
+            const lowerSegment = trimmedEnglish.toLowerCase();
+            let foundIndex = fullEnglishLower.indexOf(lowerSegment, searchIndex);
+            if (foundIndex === -1) {
+                foundIndex = fullEnglishLower.indexOf(lowerSegment);
+            }
+            if (foundIndex === -1) {
+                foundIndex = searchIndex;
+            }
+            start = foundIndex;
+            end = foundIndex + trimmedEnglish.length;
+            searchIndex = end;
+        } else {
+            start = searchIndex;
+            end = englishText ? englishText.length : 0;
+        }
+
+        segments.push({
+            start,
+            end,
+            english: trimmedEnglish || (englishText ? englishText.trim() : ''),
+            chinese: trimmedChinese || (chineseText ? chineseText.trim() : ''),
+        });
+    }
+
+    if (!segments.length && englishText && chineseText) {
+        const trimmedEnglish = englishText.trim();
+        const trimmedChinese = chineseText.trim();
+        segments.push({
+            start: 0,
+            end: trimmedEnglish.length,
+            english: trimmedEnglish,
+            chinese: trimmedChinese,
+        });
+    }
+
+    return segments;
+}
 
 // 扩写图片生成的提示词
 async function expandImagePrompt() {
@@ -2241,20 +2323,41 @@ ${originalPrompt}
         // 这里假设originalPrompt是中文，expandedPrompt是英文
         if (originalPrompt && expandedPrompt) {
             if (DEBUG_MODE) console.log('保存扩写功能的中英文对照关系');
-            // 不要清空整个数组，而是保留之前的映射
-            // 简单分割文本，实际应用中可能需要更复杂的算法
-            const chineseSentences = originalPrompt.split(/[。！？；\n]+/).filter(s => s.trim());
-            const englishSentences = expandedPrompt.split(/[.!?;\n]+/).filter(s => s.trim());
-            
-            // 创建对照映射，这里采用简单的句子对应，实际应用可能需要更复杂的匹配算法
+
+            const trimmedChinese = originalPrompt.trim();
+            const trimmedEnglish = expandedPrompt.trim();
+
+            if (!Array.isArray(window.englishChineseMapping)) {
+                window.englishChineseMapping = [];
+            }
+
+            window.translationFullTexts = {
+                chinese: trimmedChinese,
+                english: trimmedEnglish,
+            };
+
+            window.englishChineseSegments = buildSegmentMappings(trimmedChinese, trimmedEnglish);
+
+            window.englishChineseMapping.unshift({
+                english: trimmedEnglish,
+                chinese: trimmedChinese,
+                type: 'full',
+                timestamp: Date.now()
+            });
+
+            const chineseSentences = trimmedChinese.split(/[。！？；\n]+/).filter(s => s.trim());
+            const englishSentences = trimmedEnglish.split(/[.!?;\n]+/).filter(s => s.trim());
             const minLength = Math.min(chineseSentences.length, englishSentences.length);
             for (let i = 0; i < minLength; i++) {
-                englishChineseMapping.push({
+                window.englishChineseMapping.push({
                     english: englishSentences[i].trim(),
-                    chinese: chineseSentences[i].trim()
+                    chinese: chineseSentences[i].trim(),
+                    type: 'sentence',
+                    timestamp: Date.now()
                 });
             }
-            if (DEBUG_MODE) console.log('中英文对照关系:', englishChineseMapping);
+
+            if (DEBUG_MODE) console.log('中英文对照关系:', window.englishChineseMapping);
         }
         
         updatePromptCharCount(); // 更新字数统计
@@ -3100,211 +3203,121 @@ function initTranslationHistory() {
 
 // 更新对照文本框显示选中的英文对应的中文原文
 function updateComparisonOutput(selectedText) {
-    console.log('----- updateComparisonOutput调用 -----');
-    
-    // 先检查DOM元素是否存在
     const comparisonOutput = document.getElementById('comparison-output');
     if (!comparisonOutput) {
         console.error('未找到对照文本框元素！');
         return;
     }
-    
-    console.log('选中的文本:', selectedText ? selectedText.substring(0, 50) + '...' : '无');
-    
-    // 确保使用window全局变量
+
     if (!window.englishChineseMapping || !Array.isArray(window.englishChineseMapping)) {
-        console.log('创建window.englishChineseMapping数组');
         window.englishChineseMapping = [];
     }
-    
-    console.log('当前对照关系数组长度:', window.englishChineseMapping.length);
-    
-    // 强制在控制台显示所有对照关系，用于调试
-    console.log('所有对照关系:');
-    window.englishChineseMapping.forEach((mapping, index) => {
-        console.log(`  映射${index + 1}:`, {
-            english: mapping ? (mapping.english ? mapping.english.substring(0, 20) + '...' : '空英文') : '空映射',
-            chinese: mapping ? (mapping.chinese ? mapping.chinese.substring(0, 20) + '...' : '空中文') : '空映射',
-            type: mapping ? mapping.type : '未知类型'
-        });
-    });
-    
-    // 过滤有效的对照关系
-    // 避免重复声明变量，确保只声明一次
+
     const validMappings = window.englishChineseMapping.filter(mapping =>
         mapping && typeof mapping === 'object' && mapping.english && mapping.chinese
     );
-    
-    console.log('有效对照关系数量:', validMappings.length);
-    
-    // 无论是否有选中文本，只要有有效对照关系就显示第一个
-    if (validMappings.length > 0) {
-        console.log('存在有效对照关系，显示第一个对照关系的中文');
-        comparisonOutput.value = validMappings[0].chinese;
-        
-        // 如果有选中文本，可以尝试匹配更准确的对照关系
-    }
-    
-    // 如果真的没有对照关系，才显示提示信息
-    if (validMappings.length === 0) {
+    const segmentMappings = Array.isArray(window.englishChineseSegments) ? window.englishChineseSegments : [];
+    const fullChineseText = (window.translationFullTexts && window.translationFullTexts.chinese) || (validMappings[0]?.chinese || '');
+    const fullEnglishText = (window.translationFullTexts && window.translationFullTexts.english) || '';
+
+    if (!validMappings.length && !segmentMappings.length) {
         comparisonOutput.value = '请先输入中文并点击翻译按钮，建立中英文对照关系';
-        console.log('无有效对照关系，显示提示信息');
-        console.log('----- updateComparisonOutput调用结束 -----');
         return;
     }
-    
-    // 查找对应的中文文本
-    let correspondingChinese = '';
-    let bestMatchScore = 0;
-    let bestMatchMapping = null;
-    
-    // 转换为小写进行匹配（忽略大小写）
-    let normalizedSelectedText = '';
-    
-    // 如果有选中文本，继续进行匹配逻辑
-    if (selectedText && selectedText.trim()) {
-        const trimmedText = selectedText.trim();
-        console.log('开始匹配选中的文本:', trimmedText.substring(0, 100) + '...');
-        
-        // 转换为小写进行匹配（忽略大小写）
-        normalizedSelectedText = selectedText.toLowerCase().trim();
+
+    const trimmedSelection = selectedText ? selectedText.trim() : '';
+    if (!trimmedSelection) {
+        comparisonOutput.value = fullChineseText || '请先输入中文并点击翻译按钮，建立中英文对照关系';
+        return;
     }
-    
-    console.log('开始遍历有效对照关系进行匹配');
-    console.log('有效对照关系总数:', validMappings.length);
-    
-    // 遍历有效映射，而不是整个数组
-    for (let i = 0; i < validMappings.length; i++) {
-        try {
-            const mapping = validMappings[i];
-            
-            // 确保mapping.english存在且为字符串
-            if (!mapping.english || typeof mapping.english !== 'string') {
-                console.warn(`跳过无效的映射项${i + 1}:`, mapping);
-                continue;
-            }
-            
-            const normalizedEnglish = mapping.english.toLowerCase().trim();
-            console.log(`检查映射项${i + 1}:`, normalizedEnglish.substring(0, 50) + '...');
-            
-            // 计算匹配得分
-            let matchScore = 0;
-            
-            // 完全匹配得最高分
-            if (normalizedEnglish === normalizedSelectedText) {
-                matchScore = 100;
-                console.log(`找到完全匹配（映射${i + 1}）:`, {type: mapping.type, score: matchScore});
-            }
-            // 英文包含选中的文本（更宽松的匹配）
-            else if (normalizedEnglish.includes(normalizedSelectedText)) {
-                matchScore = (normalizedSelectedText.length / normalizedEnglish.length) * 80;
-                // 根据匹配文本长度调整分数
-                if (normalizedSelectedText.length > 5) matchScore += 10;
-                console.log(`找到包含匹配（映射${i + 1}）:`, {type: mapping.type, score: matchScore});
-            }
-            // 选中的文本包含英文
-            else if (normalizedSelectedText.includes(normalizedEnglish)) {
-                matchScore = (normalizedEnglish.length / normalizedSelectedText.length) * 70;
-                // 长文本匹配加分
-                if (normalizedEnglish.length > 10) matchScore += 15;
-                console.log(`找到被包含匹配（映射${i + 1}）:`, {type: mapping.type, score: matchScore});
-            }
-            // 关键词匹配（更宽松的关键词匹配）
-            else {
-                const englishWords = normalizedEnglish.split(/\s+/).filter(w => w.length > 1);
-                const selectedWords = normalizedSelectedText.split(/\s+/).filter(w => w.length > 1);
-                
-                if (englishWords.length > 0 && selectedWords.length > 0) {
-                    let commonWords = 0;
-                    let totalWordMatches = 0;
-                    
-                    // 检查每个选中的词是否在英文文本中
-                    for (const word of selectedWords) {
-                        if (englishWords.includes(word)) {
-                            commonWords++;
-                            totalWordMatches++;
-                        } else {
-                            // 部分匹配（单词前缀匹配）
-                            for (const engWord of englishWords) {
-                                if (word.startsWith(engWord.substring(0, Math.min(3, engWord.length))) || 
-                                    engWord.startsWith(word.substring(0, Math.min(3, word.length)))) {
-                                    totalWordMatches += 0.5;
-                                }
-                            }
-                        }
+
+    const translationOutput = document.getElementById('translation-output');
+    let selectionStart = null;
+    let selectionEnd = null;
+
+    if (translationOutput && document.activeElement === translationOutput) {
+        const { selectionStart: start, selectionEnd: end } = translationOutput;
+        if (typeof start === 'number' && typeof end === 'number' && start !== end) {
+            selectionStart = start;
+            selectionEnd = end;
+        }
+    }
+
+    const normalizedSelection = trimmedSelection.toLowerCase();
+
+    if (selectionStart === null && fullEnglishText) {
+        const lowerFullText = fullEnglishText.toLowerCase();
+        const approxStart = lowerFullText.indexOf(normalizedSelection);
+        if (approxStart !== -1) {
+            selectionStart = approxStart;
+            selectionEnd = approxStart + trimmedSelection.length;
+        }
+    }
+
+    let matchedChinese = '';
+
+    if (selectionStart !== null && selectionEnd !== null && selectionEnd > selectionStart) {
+        const midpoint = Math.floor((selectionStart + selectionEnd) / 2);
+        const rangeMatch = segmentMappings.find(segment =>
+            typeof segment.start === 'number' && typeof segment.end === 'number' &&
+            midpoint >= segment.start && midpoint <= segment.end && segment.chinese
+        );
+        if (rangeMatch) {
+            matchedChinese = rangeMatch.chinese;
+        }
+    }
+
+    if (!matchedChinese) {
+        let bestScore = -1;
+        validMappings.forEach(mapping => {
+            if (!mapping || !mapping.english || !mapping.chinese) return;
+            const englishLower = mapping.english.toLowerCase();
+            let score = -1;
+
+            if (englishLower === normalizedSelection) {
+                score = 1;
+            } else if (englishLower.includes(normalizedSelection)) {
+                score = normalizedSelection.length / englishLower.length;
+            } else if (normalizedSelection.includes(englishLower)) {
+                score = englishLower.length / normalizedSelection.length;
+            } else {
+                const englishWords = englishLower.split(/\s+/).filter(Boolean);
+                const selectedWords = normalizedSelection.split(/\s+/).filter(Boolean);
+                if (englishWords.length && selectedWords.length) {
+                    const commonWords = selectedWords.filter(word => englishWords.includes(word));
+                    if (commonWords.length) {
+                        score = commonWords.length / selectedWords.length * 0.6;
                     }
-                    
-                    // 计算匹配比率
-                    const wordMatchRatio = totalWordMatches / selectedWords.length;
-                    matchScore = wordMatchRatio * 60;
-                    
-                    // 提高匹配阈值
-                    if (commonWords >= Math.min(2, selectedWords.length)) {
-                        matchScore += 20;
-                    }
-                    
-                    console.log(`关键词匹配（映射${i + 1}）:`, {commonWords, score: matchScore});
                 }
             }
-            
-            // 根据映射类型增加权重
-            if (mapping.type === 'full') {
-                matchScore += 30; // 完整文本匹配优先级最高
-                console.log(`映射${i + 1}类型为full，加分30，调整后得分:`, matchScore);
-            } else if (mapping.type === 'sentence') {
-                matchScore += 15;
-                console.log(`映射${i + 1}类型为sentence，加分15，调整后得分:`, matchScore);
+
+            if (score > bestScore) {
+                bestScore = score;
+                matchedChinese = mapping.chinese;
             }
-            
-            // 更新最佳匹配
-            if (matchScore > bestMatchScore) {
-                bestMatchScore = matchScore;
-                correspondingChinese = mapping.chinese;
-                bestMatchMapping = mapping;
-                console.log(`更新最佳匹配（映射${i + 1}）:`, {score: matchScore, type: mapping.type});
-            }
-        } catch (e) {
-            console.error(`匹配过程出错（映射${i + 1}）:`, e, '映射项:', validMappings[i]);
-        }
+        });
     }
-    
-    console.log('匹配完成 - 最佳得分:', bestMatchScore, '找到的映射:', bestMatchMapping ? {type: bestMatchMapping.type} : '无');
-    
-    // 极低匹配阈值，只要有得分就显示结果
-    if (correspondingChinese && bestMatchScore >= 0) { // 阈值降至0分，确保有匹配就显示
-        comparisonOutput.value = correspondingChinese;
-        console.log('显示中文原文:', correspondingChinese.substring(0, 50) + '...');
-    } else if (validMappings.length > 0) {
-        // 如果有对照关系但没有找到匹配，显示第一个对照关系的中文作为默认值
-        console.log('未找到精确匹配，但存在对照关系，尝试显示第一个对照关系');
-        if (validMappings[0] && validMappings[0].chinese) {
-            comparisonOutput.value = validMappings[0].chinese;
-            console.log('显示第一个对照关系的中文:', validMappings[0].chinese.substring(0, 50) + '...');
-        } else {
-            comparisonOutput.value = '已建立对照关系，但无法显示对应的中文原文，请尝试重新选择文本';
-            console.log('第一个对照关系存在但中文内容无效');
-        }
-    } else {
-        comparisonOutput.value = '请先进行翻译操作，建立中英文对照关系';
-        console.log('对照关系数组为空，需要先进行翻译操作。');
+
+    if (!matchedChinese) {
+        matchedChinese = fullChineseText || validMappings[0]?.chinese || '已建立对照关系，但无法显示对应的中文原文，请尝试重新选择文本';
     }
-    
-    console.log('----- updateComparisonOutput调用结束 -----');
+
+    comparisonOutput.value = matchedChinese;
 }
 
 // 创建并显示中英文对照提示框
 function showChineseTranslation(event) {
     console.log('showChineseTranslation函数被调用');
-    
+
     // 获取选中的文本
     const selection = window.getSelection();
     const selectedText = selection.toString().trim();
-    
+
     console.log('选中的文本:', selectedText, '长度:', selectedText.length);
-    
+
     // 立即更新对照输出
     updateComparisonOutput(selectedText);
-    
+
     // 为了确保选择完成后再次更新（解决选择延迟问题）
     setTimeout(() => {
         const newSelection = window.getSelection();
@@ -3314,7 +3327,7 @@ function showChineseTranslation(event) {
             updateComparisonOutput(newSelectedText);
         }
     }, 100);
-    
+
     if (!selectedText) {
         // 移除已显示的提示框
         const existingTooltip = document.getElementById('chinese-tooltip');
@@ -3323,59 +3336,12 @@ function showChineseTranslation(event) {
         }
         return;
     }
-    
-    // 查找对应的中文文本
-    let correspondingChinese = '';
-    let bestMatchScore = 0;
-    
-    // 确保使用window全局变量
-    if (!window.englishChineseMapping || !Array.isArray(window.englishChineseMapping)) {
-        console.log('创建window.englishChineseMapping数组');
-        window.englishChineseMapping = [];
-    }
-    
-    if (DEBUG_MODE) console.log('尝试匹配的对照关系数量:', window.englishChineseMapping.length);
-    
-    for (const mapping of window.englishChineseMapping) {
-        // 计算匹配得分
-        let matchScore = 0;
-        
-        // 完全匹配得最高分
-        if (mapping.english === selectedText) {
-            matchScore = 100;
-        }
-        // 英文包含选中的文本
-        else if (mapping.english.includes(selectedText)) {
-            matchScore = selectedText.length / mapping.english.length * 80;
-        }
-        // 选中的文本包含英文
-        else if (selectedText.includes(mapping.english)) {
-            matchScore = mapping.english.length / selectedText.length * 70;
-        }
-        // 关键词匹配（检查是否有共同的重要单词）
-        else {
-            const englishWords = mapping.english.toLowerCase().split(/\s+/);
-            const selectedWords = selectedText.toLowerCase().split(/\s+/);
-            let commonWords = 0;
-            
-            for (const word of selectedWords) {
-                if (word.length > 2 && englishWords.includes(word)) {
-                    commonWords++;
-                }
-            }
-            
-            matchScore = (commonWords / selectedWords.length) * 50;
-        }
-        
-        // 更新最佳匹配
-        if (matchScore > bestMatchScore && matchScore > 30) { // 设置最低匹配阈值
-            bestMatchScore = matchScore;
-            correspondingChinese = mapping.chinese;
-        }
-    }
-    
-    if (DEBUG_MODE) console.log('找到的中文翻译:', correspondingChinese, '匹配得分:', bestMatchScore);
-    
+
+    const comparisonOutput = document.getElementById('comparison-output');
+    const correspondingChinese = comparisonOutput ? comparisonOutput.value.trim() : '';
+
+    if (DEBUG_MODE) console.log('找到的中文翻译:', correspondingChinese);
+
     if (!correspondingChinese) {
         // 如果找不到对应中文，显示一个提示（可选）
         if (DEBUG_MODE) console.log('未找到对应的中文翻译');
@@ -3469,12 +3435,21 @@ function saveTranslationMapping(sourceText, translatedText, sourceLang, targetLa
     }
     
     // 只处理中英文对照关系
-    if ((sourceLang === 'zh' && targetLang === 'en') || 
+    if ((sourceLang === 'zh' && targetLang === 'en') ||
         (sourceLang === 'en' && targetLang === 'zh')) {
-        
+
         const chineseText = sourceLang === 'zh' ? sourceText : translatedText;
         const englishText = sourceLang === 'zh' ? translatedText : sourceText;
-        
+
+        // 保存完整文本，便于无选中时直接显示
+        window.translationFullTexts = {
+            chinese: (chineseText || '').trim(),
+            english: (englishText || '').trim(),
+        };
+
+        // 预计算区间映射
+        window.englishChineseSegments = buildSegmentMappings(chineseText || '', englishText || '');
+
         // 强制使用window对象确保全局访问
         window.englishChineseMapping = window.englishChineseMapping || [];
         if (!Array.isArray(window.englishChineseMapping)) {
@@ -3483,18 +3458,19 @@ function saveTranslationMapping(sourceText, translatedText, sourceLang, targetLa
         
         console.log('保存前对照关系数组长度:', window.englishChineseMapping.length);
         
-        // 核心改进：只保存一种关键映射，确保正确使用window对象
-        const primaryMapping = {
-            english: englishText.trim(),
-            chinese: chineseText.trim(),
-            type: 'primary',
+        // 保存完整映射用于回退
+        const fullMapping = {
+            english: (englishText || '').trim(),
+            chinese: (chineseText || '').trim(),
+            type: 'full',
             timestamp: Date.now()
         };
-        
-        // 添加到数组开头
-        window.englishChineseMapping.unshift(primaryMapping);
-        console.log('添加核心映射后数组长度:', window.englishChineseMapping.length);
-        
+
+        if (fullMapping.english) {
+            window.englishChineseMapping.unshift(fullMapping);
+            console.log('添加完整映射后数组长度:', window.englishChineseMapping.length);
+        }
+
         // 可选：添加句子级映射（确保使用window对象）
         try {
             const chineseSentences = chineseText.split(/[。！？；\n]+/).filter(s => s.trim());
@@ -3545,6 +3521,8 @@ function saveTranslationMapping(sourceText, translatedText, sourceLang, targetLa
         
     } else {
         console.log('跳过非中英文对照关系的保存');
+        window.englishChineseSegments = [];
+        window.translationFullTexts = { chinese: '', english: '' };
     }
     
     console.log('===== saveTranslationMapping 调用结束 =====');
@@ -3608,10 +3586,18 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('初始化全局对照关系数组');
         window.englishChineseMapping = [];
     }
-    
+
+    if (!Array.isArray(window.englishChineseSegments)) {
+        window.englishChineseSegments = [];
+    }
+
+    if (!window.translationFullTexts || typeof window.translationFullTexts !== 'object') {
+        window.translationFullTexts = { chinese: '', english: '' };
+    }
+
     // 直接使用window.englishChineseMapping，避免创建额外的全局变量
     console.log('对照关系数组初始化完成，当前长度:', window.englishChineseMapping.length);
-    
+
     initTranslationHistory();
     initTextSelectionFeature();
     
