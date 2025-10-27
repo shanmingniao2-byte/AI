@@ -2178,6 +2178,31 @@ body.dark-mode .category-tabs {
     gap: 6px;
 }
 
+.prompt-search-bar {
+    display: flex;
+    margin-bottom: 12px;
+}
+
+.prompt-search-bar .search-input {
+    width: 100%;
+}
+
+.prompt-search-empty {
+    display: none;
+    padding: 8px 12px;
+    background-color: #f5f7fa;
+    border-radius: 8px;
+    color: #5f6368;
+    font-size: 13px;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+body.dark-mode .prompt-search-empty {
+    background-color: #3c3c3c;
+    color: #e0e0e0;
+}
+
 .prompt-item {
     padding: 8px;
     background-color: #f5f7fa;

@@ -49,6 +49,8 @@ const promptLibraryToggleBtn = document.getElementById('prompt-library-toggle');
 const promptLibraryModal = document.getElementById('prompt-library-modal'); // 提示词库弹窗
 const closePromptLibraryBtn = document.querySelector('.close-modal'); // 关闭提示词库弹窗按钮
 const promptCategories = document.querySelectorAll('.category-pane'); // 所有提示词分类面板
+const promptLibrarySearchInput = document.getElementById('prompt-library-search'); // 提示词库搜索输入框
+const promptSearchEmpty = document.getElementById('prompt-search-empty'); // 提示词搜索结果为空提示
 
 // 主题切换相关DOM元素
 const themeToggleBtn = document.getElementById('theme-toggle-btn'); // 主题切换按钮
@@ -89,6 +91,28 @@ let isShowingExpanded = false; // 当前是否显示扩写后的文本
 let isDarkMode = localStorage.getItem('dark-mode') === 'true'; // 深色模式状态
 let selectedPrompts = new Set(); // 存储已选中的提示词
 let uploadedImageData = null; // 存储上传的图片数据
+
+const historyViewState = {
+    items: [],
+    isSearchMode: false,
+    query: '',
+    tokens: [],
+    scores: new Map(),
+    displayedCount: 0
+};
+
+let promptItemsCache = [];
+let promptLibraryActiveCategoryId = null;
+const promptSearchState = {
+    active: false,
+    tokens: [],
+    profile: null,
+    query: '',
+    resultsCount: 0
+};
+
+const HISTORY_SEARCH_SCORE_THRESHOLD = 0.05;
+const PROMPT_SEARCH_SCORE_THRESHOLD = 0.05;
 
 // 初始化函数 - 页面加载完成后执行
 document.addEventListener('DOMContentLoaded', () => {
@@ -764,6 +788,10 @@ ${processedText}`;
 promptLibraryToggleBtn.addEventListener('click', () => {
     if (promptLibraryModal.classList.contains('show')) {
         promptLibraryModal.classList.remove('show');
+        if (promptLibrarySearchInput) {
+            promptLibrarySearchInput.value = '';
+        }
+        searchPromptLibrary('');
     } else {
         promptLibraryModal.classList.add('show');
     }
@@ -772,6 +800,10 @@ promptLibraryToggleBtn.addEventListener('click', () => {
 // 关闭提示词库
 closePromptLibraryBtn.addEventListener('click', () => {
     promptLibraryModal.classList.remove('show');
+    if (promptLibrarySearchInput) {
+        promptLibrarySearchInput.value = '';
+    }
+    searchPromptLibrary('');
 });
 
 // 点击模态框外部关闭提示词库
@@ -779,6 +811,10 @@ promptLibraryModal.addEventListener('click', function (event) {
     // 如果点击的是模态框本身（不是内容区域），则关闭提示词库
     if (event.target === promptLibraryModal) {
         promptLibraryModal.classList.remove('show');
+        if (promptLibrarySearchInput) {
+            promptLibrarySearchInput.value = '';
+        }
+        searchPromptLibrary('');
     }
 });
 
@@ -1099,8 +1135,349 @@ function escapeHtml(text) {
     return text.replace(/[&<>"']/g, m => map[m]);
 }
 
+function escapeRegExp(text) {
+    return (text || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function getSearchTokens(text) {
+    if (!text) return [];
+    const lower = text.toLowerCase();
+    const tokens = new Set();
+    const wordMatches = lower.match(/[\p{L}\p{N}]+/gu);
+    if (wordMatches) {
+        wordMatches.forEach(token => {
+            if (token.trim()) {
+                tokens.add(token.trim());
+            }
+        });
+    }
+    const hanMatches = lower.match(/[\p{Script=Han}]/gu);
+    if (hanMatches) {
+        hanMatches.forEach(char => tokens.add(char));
+    }
+    const trimmed = lower.trim();
+    if (trimmed) {
+        tokens.add(trimmed);
+    }
+    return Array.from(tokens).sort((a, b) => b.length - a.length);
+}
+
+function createSearchProfile(query) {
+    const trimmed = (query || '').trim();
+    return {
+        raw: query,
+        trimmed,
+        normalized: trimmed.toLowerCase(),
+        tokens: getSearchTokens(trimmed)
+    };
+}
+
+function computeLevenshteinDistance(a, b) {
+    const source = Array.from(a);
+    const target = Array.from(b);
+    const sourceLength = source.length;
+    const targetLength = target.length;
+
+    if (sourceLength === 0) return targetLength;
+    if (targetLength === 0) return sourceLength;
+
+    const previous = new Array(targetLength + 1);
+    const current = new Array(targetLength + 1);
+
+    for (let j = 0; j <= targetLength; j++) {
+        previous[j] = j;
+    }
+
+    for (let i = 1; i <= sourceLength; i++) {
+        current[0] = i;
+        const sourceChar = source[i - 1];
+        for (let j = 1; j <= targetLength; j++) {
+            const cost = sourceChar === target[j - 1] ? 0 : 1;
+            current[j] = Math.min(
+                current[j - 1] + 1,
+                previous[j] + 1,
+                previous[j - 1] + cost
+            );
+        }
+
+        for (let j = 0; j <= targetLength; j++) {
+            previous[j] = current[j];
+        }
+    }
+
+    return previous[targetLength];
+}
+
+function computeLevenshteinSimilarity(a, b) {
+    if (!a && !b) return 1;
+    const maxLength = Math.max(Array.from(a).length, Array.from(b).length);
+    if (maxLength === 0) return 1;
+    const distance = computeLevenshteinDistance(a, b);
+    return 1 - distance / maxLength;
+}
+
+function computeTokenOverlap(queryTokens, candidateTokens) {
+    if (!queryTokens.length || !candidateTokens.length) return 0;
+    const candidateSet = new Set(candidateTokens);
+    let matches = 0;
+    queryTokens.forEach(token => {
+        if (candidateSet.has(token)) {
+            matches++;
+        }
+    });
+    const unionSize = new Set([...queryTokens, ...candidateTokens]).size;
+    const jaccard = unionSize === 0 ? 0 : matches / unionSize;
+    const recall = matches / queryTokens.length;
+    return Math.max(jaccard, recall);
+}
+
+function computeFuzzyScore(profile, candidateText) {
+    if (!profile || !profile.normalized || !candidateText) {
+        return 0;
+    }
+
+    const normalizedCandidate = candidateText.toLowerCase();
+    const candidateTokens = getSearchTokens(candidateText);
+    const overlap = computeTokenOverlap(profile.tokens, candidateTokens);
+    const levenshteinSim = computeLevenshteinSimilarity(profile.normalized, normalizedCandidate);
+    const directHit = normalizedCandidate.includes(profile.normalized) ? 1 : 0;
+
+    let partialHit = 0;
+    for (const token of profile.tokens) {
+        if (normalizedCandidate.includes(token)) {
+            const coverage = token.length / Math.max(profile.normalized.length, 1);
+            partialHit = Math.max(partialHit, 0.7 + 0.3 * coverage);
+        }
+    }
+
+    const weighted = (levenshteinSim * 0.45) + (overlap * 0.55);
+    const combined = Math.max(weighted, partialHit, directHit);
+    return Math.min(1, Math.max(0, combined));
+}
+
+function highlightText(text, tokens) {
+    if (!text) return '';
+    const safeText = escapeHtml(text);
+    if (!tokens || tokens.length === 0) {
+        return safeText;
+    }
+    const patternParts = tokens
+        .map(token => token && token.trim())
+        .filter(Boolean)
+        .map(token => escapeRegExp(token));
+    if (patternParts.length === 0) {
+        return safeText;
+    }
+    const pattern = patternParts.join('|');
+    const regex = new RegExp(`(${pattern})`, 'gi');
+    return safeText.replace(regex, '<mark>$1</mark>');
+}
+
+function cachePromptItems() {
+    promptItemsCache = Array.from(document.querySelectorAll('.prompt-item'));
+    promptItemsCache.forEach((item, index) => {
+        if (!item.dataset.originalIndex) {
+            item.dataset.originalIndex = String(index);
+        }
+        const zhElement = item.querySelector('.zh');
+        const enElement = item.querySelector('.en');
+        if (zhElement && item.dataset.originalZh === undefined) {
+            item.dataset.originalZh = zhElement.textContent || '';
+        }
+        if (enElement && item.dataset.originalEn === undefined) {
+            item.dataset.originalEn = enElement.textContent || '';
+        }
+    });
+}
+
+function resetPromptItemHighlight(item) {
+    const zhElement = item.querySelector('.zh');
+    const enElement = item.querySelector('.en');
+    if (zhElement) {
+        const originalZh = item.dataset.originalZh !== undefined ? item.dataset.originalZh : zhElement.textContent || '';
+        zhElement.textContent = originalZh;
+    }
+    if (enElement) {
+        const originalEn = item.dataset.originalEn !== undefined ? item.dataset.originalEn : enElement.textContent || '';
+        enElement.textContent = originalEn;
+    }
+}
+
+function highlightPromptItem(item, tokens) {
+    const zhElement = item.querySelector('.zh');
+    const enElement = item.querySelector('.en');
+    if (zhElement) {
+        const originalZh = item.dataset.originalZh !== undefined ? item.dataset.originalZh : zhElement.textContent || '';
+        zhElement.innerHTML = highlightText(originalZh, tokens);
+    }
+    if (enElement) {
+        const originalEn = item.dataset.originalEn !== undefined ? item.dataset.originalEn : enElement.textContent || '';
+        enElement.innerHTML = highlightText(originalEn, tokens);
+    }
+}
+
+function updatePromptCategoryVisibility() {
+    if (!promptCategories || promptCategories.length === 0) return;
+
+    if (!promptLibraryActiveCategoryId) {
+        const activePane = document.querySelector('.category-pane.active');
+        if (activePane) {
+            promptLibraryActiveCategoryId = activePane.id;
+        } else {
+            promptLibraryActiveCategoryId = promptCategories[0].id;
+        }
+    }
+
+    const activeId = promptLibraryActiveCategoryId;
+
+    promptCategories.forEach(category => {
+        const isActive = category.id === activeId;
+        category.classList.toggle('active', isActive);
+        category.style.display = isActive ? 'block' : 'none';
+    });
+
+    document.querySelectorAll('.category-tab').forEach(tab => {
+        const targetCategory = tab.getAttribute('data-category');
+        tab.classList.toggle('active', targetCategory === activeId);
+    });
+}
+
+function resetPromptLibraryOrder() {
+    if (!promptItemsCache.length) {
+        cachePromptItems();
+    }
+
+    const lists = new Set();
+    promptItemsCache.forEach(item => {
+        const parentList = item.closest('.prompt-list');
+        if (parentList) {
+            lists.add(parentList);
+        }
+        item.style.display = '';
+        resetPromptItemHighlight(item);
+        item.removeAttribute('data-match-score');
+        item.removeAttribute('title');
+    });
+
+    lists.forEach(list => {
+        const items = Array.from(list.querySelectorAll('.prompt-item'));
+        items.sort((a, b) => {
+            const indexA = parseInt(a.dataset.originalIndex || '0', 10);
+            const indexB = parseInt(b.dataset.originalIndex || '0', 10);
+            return indexA - indexB;
+        });
+        items.forEach(item => list.appendChild(item));
+    });
+
+    updatePromptCategoryVisibility();
+}
+
+function searchPromptLibrary(query) {
+    if (!promptLibraryModal) return;
+    if (!promptItemsCache.length) {
+        cachePromptItems();
+    }
+
+    const activeCategory = document.querySelector('.category-pane.active') || promptCategories[0];
+    if (!activeCategory) {
+        if (promptSearchEmpty) {
+            promptSearchEmpty.style.display = 'block';
+        }
+        return;
+    }
+
+    promptLibraryActiveCategoryId = activeCategory.id;
+
+    const trimmedQuery = (query || '').trim();
+
+    if (!trimmedQuery) {
+        promptSearchState.active = false;
+        promptSearchState.tokens = [];
+        promptSearchState.profile = null;
+        promptSearchState.query = '';
+        promptSearchState.resultsCount = 0;
+        if (promptSearchEmpty) {
+            promptSearchEmpty.style.display = 'none';
+        }
+        resetPromptLibraryOrder();
+        return;
+    }
+
+    const profile = createSearchProfile(trimmedQuery);
+    if (!profile.normalized) {
+        searchPromptLibrary('');
+        return;
+    }
+
+    promptSearchState.active = true;
+    promptSearchState.tokens = profile.tokens;
+    promptSearchState.profile = profile;
+    promptSearchState.query = trimmedQuery;
+
+    const items = Array.from(activeCategory.querySelectorAll('.prompt-item'));
+    const matches = [];
+
+    items.forEach(item => {
+        const zhText = item.dataset.originalZh || item.querySelector('.zh')?.textContent || '';
+        const enText = item.dataset.originalEn || item.querySelector('.en')?.textContent || '';
+        const combinedText = `${zhText} ${enText}`.trim();
+        const score = computeFuzzyScore(profile, combinedText);
+        if (score >= PROMPT_SEARCH_SCORE_THRESHOLD) {
+            matches.push({ item, score });
+        }
+    });
+
+    const parentList = activeCategory.querySelector('.prompt-list');
+
+    if (matches.length === 0) {
+        items.forEach(item => {
+            item.style.display = 'none';
+            resetPromptItemHighlight(item);
+            item.removeAttribute('data-match-score');
+            item.removeAttribute('title');
+        });
+        if (promptSearchEmpty) {
+            promptSearchEmpty.style.display = 'block';
+        }
+        promptSearchState.resultsCount = 0;
+        return;
+    }
+
+    matches.sort((a, b) => b.score - a.score);
+
+    if (promptSearchEmpty) {
+        promptSearchEmpty.style.display = 'none';
+    }
+
+    const matchedSet = new Set(matches.map(match => match.item));
+
+    matches.forEach(({ item, score }) => {
+        item.style.display = '';
+        highlightPromptItem(item, profile.tokens);
+        item.dataset.matchScore = score.toFixed(4);
+        item.title = `匹配度：${Math.round(score * 100)}%`;
+        if (parentList) {
+            parentList.appendChild(item);
+        }
+    });
+
+    items.forEach(item => {
+        if (!matchedSet.has(item)) {
+            item.style.display = 'none';
+            resetPromptItemHighlight(item);
+            item.removeAttribute('data-match-score');
+            item.removeAttribute('title');
+        }
+    });
+
+    promptSearchState.resultsCount = matches.length;
+}
+
 // 初始化提示词库
 function initPromptLibrary() {
+    cachePromptItems();
+    updatePromptCategoryVisibility();
+
     // 不清空全局选中的提示词集合，保留之前的选中状态
 
     // 初始化提示词项的选中状态
@@ -1129,25 +1506,21 @@ function initPromptLibrary() {
     // 分类标签点击事件
     document.querySelectorAll('.category-tab').forEach(tab => {
         tab.addEventListener('click', function () {
-            // 移除所有标签的active类
-            document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
-            // 添加当前标签的active类
-            this.classList.add('active');
-
-            // 获取目标分类ID
             const targetCategory = this.getAttribute('data-category');
+            promptLibraryActiveCategoryId = targetCategory;
+            updatePromptCategoryVisibility();
 
-            // 隐藏所有分类内容
-            document.querySelectorAll('.category-pane').forEach(category => {
-                category.classList.remove('active');
-                category.style.display = 'none';
-            });
-
-            // 显示目标分类内容
-            const targetElement = document.getElementById(targetCategory);
-            if (targetElement) {
-                targetElement.classList.add('active');
-                targetElement.style.display = 'block';
+            if (promptLibrarySearchInput && promptLibrarySearchInput.value.trim()) {
+                searchPromptLibrary(promptLibrarySearchInput.value);
+            } else {
+                promptSearchState.active = false;
+                promptSearchState.tokens = [];
+                promptSearchState.profile = null;
+                promptSearchState.query = '';
+                if (promptSearchEmpty) {
+                    promptSearchEmpty.style.display = 'none';
+                }
+                resetPromptLibraryOrder();
             }
         });
     });
@@ -1260,6 +1633,26 @@ function initPromptLibrary() {
     });
 
     modalHeader.appendChild(clearButton);
+
+    resetPromptLibraryOrder();
+
+    if (promptLibrarySearchInput) {
+        promptLibrarySearchInput.addEventListener('input', (event) => {
+            searchPromptLibrary(event.target.value);
+        });
+
+        promptLibrarySearchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                promptLibrarySearchInput.value = '';
+                searchPromptLibrary('');
+            }
+        });
+    }
+
+    if (promptSearchEmpty) {
+        promptSearchEmpty.style.display = 'none';
+    }
 }
 
 // 生成反向提示词
@@ -3283,152 +3676,235 @@ function addToHistory(sourceText, translatedText, sourceLang, targetLang) {
     updateTranslationHistory();
 }
 
+function appendHistoryItem(item, tokens, scores, isSearchMode) {
+    if (!historyList) return;
+
+    const historyItem = document.createElement('div');
+    historyItem.className = 'history-item';
+    historyItem.dataset.id = item.id;
+
+    const sourceLangName = getLanguageName(item.sourceLang);
+    const targetLangName = getLanguageName(item.targetLang);
+
+    const sourceContent = highlightText(item.sourceText, tokens);
+    const translatedContent = highlightText(item.translatedText, tokens);
+
+    historyItem.innerHTML = `
+        <div class="history-item-header">
+            <span class="history-item-languages">${sourceLangName} → ${targetLangName}</span>
+            <span class="history-item-time">${formatTime(new Date(item.timestamp))}</span>
+        </div>
+        <div class="history-item-content">
+            <div class="history-item-source">${sourceContent}</div>
+            <div class="history-item-translated">${translatedContent}</div>
+        </div>
+        <div class="history-item-actions">
+            <button class="history-item-use-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                使用
+            </button>
+            <button class="history-item-delete-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 6h18"></path>
+                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                </svg>
+                删除
+            </button>
+        </div>
+    `;
+
+    if (isSearchMode && scores.has(item.id)) {
+        const score = scores.get(item.id);
+        historyItem.dataset.score = score.toFixed(4);
+        historyItem.title = `匹配度：${Math.round(score * 100)}%`;
+    } else {
+        historyItem.removeAttribute('data-score');
+        historyItem.removeAttribute('title');
+    }
+
+    historyList.appendChild(historyItem);
+
+    const useBtn = historyItem.querySelector('.history-item-use-btn');
+    if (useBtn) {
+        useBtn.addEventListener('click', () => {
+            if (sourceTextInput) sourceTextInput.value = item.sourceText;
+            if (translationOutputTextarea) translationOutputTextarea.value = item.translatedText;
+            if (sourceLanguageSelect) sourceLanguageSelect.value = item.sourceLang;
+            if (targetLanguageSelect) targetLanguageSelect.value = item.targetLang;
+            updateCharCount();
+            saveTranslationMapping(item.sourceText, item.translatedText, item.sourceLang, item.targetLang);
+            updateComparisonOutput('');
+            showNotification('已使用历史记录', 'success');
+        });
+    }
+
+    const deleteBtn = historyItem.querySelector('.history-item-delete-btn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => {
+            translationHistory = translationHistory.filter(h => h.id !== item.id);
+            saveTranslationHistory();
+
+            if (historyViewState.isSearchMode && historySearch) {
+                searchHistory(historySearch.value);
+            } else {
+                updateTranslationHistory();
+            }
+
+            showNotification('已删除历史记录', 'success');
+        });
+    }
+}
+
+function addHistoryLoadMoreIndicator(remainingCount) {
+    if (!historyList) return;
+    const loadMoreItem = document.createElement('div');
+    loadMoreItem.className = 'history-load-more';
+    loadMoreItem.innerHTML = `
+        <div class="history-load-more-text">
+            滚动查看更多 (${remainingCount} 条)
+        </div>
+    `;
+    historyList.appendChild(loadMoreItem);
+}
+
+function removeHistoryLoadMoreIndicator() {
+    if (!historyList) return;
+    const loadMoreItem = historyList.querySelector('.history-load-more');
+    if (loadMoreItem) {
+        loadMoreItem.remove();
+    }
+}
+
+function renderHistoryList() {
+    if (!historyList) return;
+
+    historyList.innerHTML = '';
+
+    const { items, isSearchMode, tokens, scores } = historyViewState;
+
+    if (!items || items.length === 0) {
+        const emptyMessage = isSearchMode ? '没有找到匹配的翻译历史' : '暂无翻译历史';
+        historyList.innerHTML = `<div class="history-empty">${emptyMessage}</div>`;
+        historyViewState.displayedCount = 0;
+        return;
+    }
+
+    const initialCount = isSearchMode ? items.length : Math.min(2, items.length);
+
+    for (let i = 0; i < initialCount; i++) {
+        appendHistoryItem(items[i], tokens, scores, isSearchMode);
+    }
+
+    historyViewState.displayedCount = initialCount;
+
+    if (!isSearchMode && items.length > initialCount) {
+        addHistoryLoadMoreIndicator(items.length - initialCount);
+    }
+}
+
+function loadMoreHistoryItems(count = 5) {
+    if (!historyList) return;
+    const { items, displayedCount, tokens, scores } = historyViewState;
+
+    if (!items || displayedCount >= items.length) {
+        return;
+    }
+
+    removeHistoryLoadMoreIndicator();
+
+    const endIndex = Math.min(displayedCount + count, items.length);
+
+    for (let i = displayedCount; i < endIndex; i++) {
+        appendHistoryItem(items[i], tokens, scores, false);
+    }
+
+    historyViewState.displayedCount = endIndex;
+
+    if (endIndex < items.length) {
+        addHistoryLoadMoreIndicator(items.length - endIndex);
+    }
+}
+
 // 更新翻译历史显示
 function updateTranslationHistory() {
     if (!historyList) return;
 
-    // 清空列表
-    historyList.innerHTML = '';
-
-    if (translationHistory.length === 0) {
-        historyList.innerHTML = '<div class="history-empty">暂无翻译历史</div>';
-        return;
-    }
-
-    // 初始只显示前两条记录
-    const initialDisplayCount = 2;
-    const itemsToShow = Math.min(initialDisplayCount, translationHistory.length);
-    
-    // 添加历史记录项
-    for (let i = 0; i < itemsToShow; i++) {
-        const item = translationHistory[i];
-        const historyItem = document.createElement('div');
-        historyItem.className = 'history-item';
-        historyItem.dataset.id = item.id;
-
-        // 获取语言名称
-        const sourceLangName = getLanguageName(item.sourceLang);
-        const targetLangName = getLanguageName(item.targetLang);
-
-        historyItem.innerHTML = `
-            <div class="history-item-header">
-                <span class="history-item-languages">${sourceLangName} → ${targetLangName}</span>
-                <span class="history-item-time">${formatTime(new Date(item.timestamp))}</span>
-            </div>
-            <div class="history-item-content">
-                <div class="history-item-source">${escapeHtml(item.sourceText)}</div>
-                <div class="history-item-translated">${escapeHtml(item.translatedText)}</div>
-            </div>
-            <div class="history-item-actions">
-                <button class="history-item-use-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path>
-                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
-                    使用
-                </button>
-                <button class="history-item-delete-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 6h18"></path>
-                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
-                    </svg>
-                    删除
-                </button>
-            </div>
-        `;
-
-        // 添加到列表
-        historyList.appendChild(historyItem);
-
-        // 添加使用按钮事件
-        const useBtn = historyItem.querySelector('.history-item-use-btn');
-        useBtn.addEventListener('click', () => {
-            // 填充源文本和目标文本
-            if (sourceTextInput) sourceTextInput.value = item.sourceText;
-            if (translationOutputTextarea) translationOutputTextarea.value = item.translatedText;
-
-            // 设置语言选择器
-            if (sourceLangSelect) sourceLangSelect.value = item.sourceLang;
-            if (targetLangSelect) targetLangSelect.value = item.targetLang;
-
-            // 更新字符计数
-            updateCharCount();
-
-            saveTranslationMapping(item.sourceText, item.translatedText, item.sourceLang, item.targetLang);
-            updateComparisonOutput('');
-
-            // 显示通知
-            showNotification('已使用历史记录', 'success');
-        });
-
-        // 添加删除按钮事件
-        const deleteBtn = historyItem.querySelector('.history-item-delete-btn');
-        deleteBtn.addEventListener('click', () => {
-            // 从数组中移除
-            translationHistory = translationHistory.filter(h => h.id !== item.id);
-            
-            // 保存到本地存储
-            saveTranslationHistory();
-            
-            // 更新显示
-            updateTranslationHistory();
-            
-            // 显示通知
-            showNotification('已删除历史记录', 'success');
-        });
-    }
-    
-    // 如果有更多记录，添加加载更多提示
-    if (translationHistory.length > initialDisplayCount) {
-        const loadMoreItem = document.createElement('div');
-        loadMoreItem.className = 'history-load-more';
-        loadMoreItem.innerHTML = `
-            <div class="history-load-more-text">
-                滚动查看更多 (${translationHistory.length - initialDisplayCount} 条)
-            </div>
-        `;
-        historyList.appendChild(loadMoreItem);
-    }
+    historyViewState.items = translationHistory.slice();
+    historyViewState.isSearchMode = false;
+    historyViewState.query = '';
+    historyViewState.tokens = [];
+    historyViewState.scores = new Map();
+    renderHistoryList();
 }
 
 // 搜索翻译历史
 function searchHistory(query) {
     if (!historyList) return;
 
-    // 清空列表
-    historyList.innerHTML = '';
+    const trimmedQuery = (query || '').trim();
 
-    // 如果查询为空，显示所有历史记录
-    if (!query.trim()) {
-        updateTranslationHistory();
+    if (!trimmedQuery) {
+        historyViewState.items = translationHistory.slice();
+        historyViewState.isSearchMode = false;
+        historyViewState.query = '';
+        historyViewState.tokens = [];
+        historyViewState.scores = new Map();
+        renderHistoryList();
         return;
     }
 
-    // 过滤历史记录
-    const filteredHistory = translationHistory.filter(item => {
-        const searchText = query.toLowerCase();
-        return (
-            item.sourceText.toLowerCase().includes(searchText) ||
-            item.translatedText.toLowerCase().includes(searchText) ||
-            getLanguageName(item.sourceLang).toLowerCase().includes(searchText) ||
-            getLanguageName(item.targetLang).toLowerCase().includes(searchText)
-        );
-    });
+    const profile = createSearchProfile(trimmedQuery);
+    if (!profile.normalized) {
+        historyViewState.items = translationHistory.slice();
+        historyViewState.isSearchMode = false;
+        historyViewState.query = '';
+        historyViewState.tokens = [];
+        historyViewState.scores = new Map();
+        renderHistoryList();
+        return;
+    }
 
-    if (filteredHistory.length === 0) {
+    const scoredResults = translationHistory
+        .map(item => {
+            const fields = [
+                item.sourceText,
+                item.translatedText,
+                getLanguageName(item.sourceLang),
+                getLanguageName(item.targetLang)
+            ];
+
+            const score = fields.reduce((maxScore, field) => {
+                if (!field) return maxScore;
+                const fieldScore = computeFuzzyScore(profile, field);
+                return fieldScore > maxScore ? fieldScore : maxScore;
+            }, 0);
+
+            return { item, score };
+        })
+        .filter(result => result.score >= HISTORY_SEARCH_SCORE_THRESHOLD);
+
+    if (scoredResults.length === 0) {
+        historyViewState.items = [];
+        historyViewState.isSearchMode = true;
+        historyViewState.query = trimmedQuery;
+        historyViewState.tokens = profile.tokens;
+        historyViewState.scores = new Map();
+        historyViewState.displayedCount = 0;
         historyList.innerHTML = '<div class="history-empty">没有找到匹配的翻译历史</div>';
         return;
     }
 
-    // 临时替换历史记录数组
-    const originalHistory = translationHistory;
-    translationHistory = filteredHistory;
+    scoredResults.sort((a, b) => b.score - a.score);
 
-    // 更新显示
-    updateTranslationHistory();
-
-    // 恢复原始历史记录数组
-    translationHistory = originalHistory;
+    historyViewState.items = scoredResults.map(result => result.item);
+    historyViewState.isSearchMode = true;
+    historyViewState.query = trimmedQuery;
+    historyViewState.tokens = profile.tokens;
+    historyViewState.scores = new Map(scoredResults.map(result => [result.item.id, result.score]));
+    renderHistoryList();
 }
 
 // 清空翻译历史
@@ -3480,122 +3956,19 @@ function initTranslationHistory() {
     // 添加滚动事件，实现加载更多历史记录
     if (historyList) {
         let isLoadingMore = false;
-        let currentlyDisplayed = 2; // 初始显示数量
-        
         historyList.addEventListener('scroll', () => {
-            // 检查是否滚动到底部
+            if (historyViewState.isSearchMode) return;
+            if (isLoadingMore) return;
+            if (!historyViewState.items || historyViewState.displayedCount >= historyViewState.items.length) return;
+
             const isAtBottom = historyList.scrollTop + historyList.clientHeight >= historyList.scrollHeight - 5;
-            
-            if (isAtBottom && !isLoadingMore && currentlyDisplayed < translationHistory.length) {
-                isLoadingMore = true;
-                
-                // 使用 requestAnimationFrame 优化性能
-                requestAnimationFrame(() => {
-                    // 移除加载更多提示
-                    const loadMoreItem = historyList.querySelector('.history-load-more');
-                    if (loadMoreItem) {
-                        loadMoreItem.remove();
-                    }
-                    
-                    // 加载更多记录，每次加载5条
-                    const itemsToLoad = 5;
-                    const endIndex = Math.min(currentlyDisplayed + itemsToLoad, translationHistory.length);
-                    
-                    for (let i = currentlyDisplayed; i < endIndex; i++) {
-                        const item = translationHistory[i];
-                        const historyItem = document.createElement('div');
-                        historyItem.className = 'history-item';
-                        historyItem.dataset.id = item.id;
+            if (!isAtBottom) return;
 
-                        // 获取语言名称
-                        const sourceLangName = getLanguageName(item.sourceLang);
-                        const targetLangName = getLanguageName(item.targetLang);
-
-                        historyItem.innerHTML = `
-                            <div class="history-item-header">
-                                <span class="history-item-languages">${sourceLangName} → ${targetLangName}</span>
-                                <span class="history-item-time">${formatTime(new Date(item.timestamp))}</span>
-                            </div>
-                            <div class="history-item-content">
-                                <div class="history-item-source">${escapeHtml(item.sourceText)}</div>
-                                <div class="history-item-translated">${escapeHtml(item.translatedText)}</div>
-                            </div>
-                            <div class="history-item-actions">
-                                <button class="history-item-use-btn">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path>
-                                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                    </svg>
-                                    使用
-                                </button>
-                                <button class="history-item-delete-btn">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M3 6h18"></path>
-                                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
-                                    </svg>
-                                    删除
-                                </button>
-                            </div>
-                        `;
-
-                        // 添加到列表
-                        historyList.appendChild(historyItem);
-
-                        // 添加使用按钮事件
-                        const useBtn = historyItem.querySelector('.history-item-use-btn');
-                        useBtn.addEventListener('click', () => {
-                            // 填充源文本和目标文本
-                            if (sourceTextInput) sourceTextInput.value = item.sourceText;
-                            if (translationOutputTextarea) translationOutputTextarea.value = item.translatedText;
-
-                            // 设置语言选择器
-                            if (sourceLangSelect) sourceLangSelect.value = item.sourceLang;
-                            if (targetLangSelect) targetLangSelect.value = item.targetLang;
-
-                            // 更新字符计数
-                            updateCharCount();
-
-                            saveTranslationMapping(item.sourceText, item.translatedText, item.sourceLang, item.targetLang);
-                            updateComparisonOutput('');
-
-                            // 显示通知
-                            showNotification('已使用历史记录', 'success');
-                        });
-
-                        // 添加删除按钮事件
-                        const deleteBtn = historyItem.querySelector('.history-item-delete-btn');
-                        deleteBtn.addEventListener('click', () => {
-                            // 从数组中移除
-                            translationHistory = translationHistory.filter(h => h.id !== item.id);
-                            
-                            // 保存到本地存储
-                            saveTranslationHistory();
-                            
-                            // 更新显示
-                            updateTranslationHistory();
-                            
-                            // 显示通知
-                            showNotification('已删除历史记录', 'success');
-                        });
-                    }
-                    
-                    currentlyDisplayed = endIndex;
-                    
-                    // 如果还有更多记录，添加加载更多提示
-                    if (currentlyDisplayed < translationHistory.length) {
-                        const newLoadMoreItem = document.createElement('div');
-                        newLoadMoreItem.className = 'history-load-more';
-                        newLoadMoreItem.innerHTML = `
-                            <div class="history-load-more-text">
-                                滚动查看更多 (${translationHistory.length - currentlyDisplayed} 条)
-                            </div>
-                        `;
-                        historyList.appendChild(newLoadMoreItem);
-                    }
-                    
-                    isLoadingMore = false;
-                });
-            }
+            isLoadingMore = true;
+            requestAnimationFrame(() => {
+                loadMoreHistoryItems();
+                isLoadingMore = false;
+            });
         });
     }
 }
