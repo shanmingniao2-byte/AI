@@ -3571,6 +3571,13 @@ async function generateImageWithJimeng({ prompt, negativePrompt, resolution }) {
     const version = '2023-09-01';
     const timestamp = Math.floor(Date.now() / 1000);
     const jimengResolution = resolution.replace(/[x×]/i, '*');
+    const queryParams = {
+        Action: action,
+        Version: version
+    };
+
+    const canonicalQueryString = buildCanonicalQueryString(queryParams);
+    const requestUrl = `https://${host}/?${canonicalQueryString}`;
 
     const payload = {
         Prompt: prompt,
@@ -3601,12 +3608,17 @@ async function generateImageWithJimeng({ prompt, negativePrompt, resolution }) {
 
     const headers = {
         ...signingHeaders,
+        canonicalQueryString
+    });
+
+    const headers = {
+        'Content-Type': 'application/json',
         'Authorization': authorization
     };
 
     console.log('调用即梦接口参数:', payload);
 
-    const response = await fetch(`https://${host}`, {
+    const response = await fetch(requestUrl, {
         method: 'POST',
         headers,
         body: payloadString
