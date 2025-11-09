@@ -86,8 +86,12 @@ const expandPromptBtn = document.getElementById('expand-prompt-btn'); // 扩写�
 const usePromptBtn = document.getElementById('use-prompt-btn'); // 使用提示词按钮
 const promptCharCounter = document.getElementById('prompt-char-counter'); // 提示词字符计数器
 const imageModelSelect = document.getElementById('image-model-select'); // 图片模型选择器
-const imageProviderSelect = document.getElementById('image-provider-select'); // 文生图生成引擎选择器
-const imageProviderHelp = document.getElementById('image-provider-help'); // 文生图生成引擎提示信息
+// 文生图生成引擎选择器（已声明，无需重复声明）
+// const imageProviderSelect = document.getElementById('image-provider-select');
+// 文生图生成引擎提示信息（避免重复声明，使用已存在的全局变量）
+if (typeof imageProviderHelp === 'undefined') {
+  var imageProviderHelp = document.getElementById('image-provider-help');
+}
 
 // 全局变量 - 存储应用状态和数据
 let apiKey = localStorage.getItem('glm-api-key') || ''; // 从本地存储获取API密钥
@@ -208,6 +212,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 初始化拖放目标功能
     initDropTargets();
+    
+    // 初始化文生图功能DOM元素
+    initTextToImageElements();
+    
+    // 确保生成图像按钮存在并正确绑定事件
+    setTimeout(() => {
+        const generateBtn = document.getElementById('generate-image-btn');
+        if (generateBtn) {
+            console.log('生成图像按钮元素已找到');
+            // 如果按钮存在但没有事件监听器，则添加一个
+            if (!generateBtn.hasAttribute('data-event-bound')) {
+                generateBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('生成图像按钮被点击（延迟绑定）');
+                    generateImage();
+                });
+                generateBtn.setAttribute('data-event-bound', 'true');
+                console.log('生成图像按钮事件监听器已绑定（延迟绑定）');
+            }
+        } else {
+            console.error('无法找到生成图像按钮元素');
+        }
+    }, 1000);
+    
+    // 初始化复制反向提示词按钮
+    initCopyNegativePromptBtn();
+    
+    // 初始化翻译历史和文本选择功能
+    initTranslationAndSelectionFeatures();
 
     // 清除按钮事件监听
     clearSourceBtn.addEventListener('click', () => {
@@ -1905,7 +1938,7 @@ ${inputText}`;
 }
 
 // 复制反向提示词
-document.addEventListener('DOMContentLoaded', () => {
+function initCopyNegativePromptBtn() {
     const copyNegativePromptBtn = document.getElementById('copy-negative-prompt');
     if (copyNegativePromptBtn) {
         copyNegativePromptBtn.addEventListener('click', () => {
@@ -1922,18 +1955,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-});
+}
 
-// 确保复制反向提示词按钮的事件监听器在页面加载后也能正确设置
-window.addEventListener('load', () => {
-    const copyNegativePromptBtn = document.getElementById('copy-negative-prompt');
-    if (copyNegativePromptBtn) {
-        // 移除之前可能存在的事件监听器
-        copyNegativePromptBtn.removeEventListener('click', copyNegativePromptHandler);
-        // 添加新的事件监听器
-        copyNegativePromptBtn.addEventListener('click', copyNegativePromptHandler);
-    }
-});
+// window.load事件监听器已移除，功能已整合到DOMContentLoaded中
 
 // 复制反向提示词的处理函数
 function copyNegativePromptHandler() {
@@ -3291,47 +3315,145 @@ helpNavLinks.forEach(link => {
     });
 });
 
-// 测试文生图功能帮助部分是否能正常显示
-document.addEventListener('DOMContentLoaded', () => {
-    // 检查是否存在文生图功能的帮助部分
-    const textToImageHelpSection = document.getElementById('help-text-to-image');
-    console.log('文生图功能帮助部分存在:', textToImageHelpSection !== null);
-    
-    // 如果存在，可以在这里添加一些调试代码
-    if (textToImageHelpSection) {
-        console.log('文生图功能帮助部分HTML:', textToImageHelpSection.innerHTML);
-    }
-});
-
 // ========== 文生图功能 ==========
-// 获取DOM元素
-const positivePromptTextarea = document.getElementById('positive-prompt-textarea');
-const negativePromptTextarea = document.getElementById('negative-prompt-textarea');
-const positivePromptCharCounter = document.getElementById('positive-prompt-char-counter');
-const negativePromptCharCounter = document.getElementById('negative-prompt-char-counter');
-const imageResolutionSelect = document.getElementById('image-resolution-select');
-const generateImageBtn = document.getElementById('generate-image-btn');
-const generatedImageDisplay = document.getElementById('generated-image-display');
-const downloadImageBtn = document.getElementById('download-image-btn');
-const regenerateImageBtn = document.getElementById('regenerate-image-btn');
-const imageGenerationInfo = document.getElementById('image-generation-info');
-const clearPositivePromptBtnTti = document.getElementById('clear-positive-prompt-btn');
-const clearNegativePromptBtnTti = document.getElementById('clear-negative-prompt-btn-tti');
+// 声明变量（在DOM加载后初始化）
+let positivePromptTextarea;
+let negativePromptTextarea;
+let positivePromptCharCounter;
+let negativePromptCharCounter;
+let imageResolutionSelect;
+let imageProviderSelect;
+let imageProviderHelp;
+let generateImageBtn;
+let generatedImageDisplay;
+let downloadImageBtn;
+let regenerateImageBtn;
+let imageGenerationInfo;
+let clearPositivePromptBtnTti;
+let clearNegativePromptBtnTti;
 
-// 创建图像放大查看模态框
-const imageModal = document.createElement('div');
-imageModal.className = 'image-modal';
-imageModal.innerHTML = `
-    <div class="image-modal-content">
-        <span class="close-image-modal">&times;</span>
-        <img src="" alt="放大的图像" class="modal-image">
-    </div>
-`;
-document.body.appendChild(imageModal);
+// 初始化文生图功能DOM元素
+function initTextToImageElements() {
+    // 获取DOM元素
+    positivePromptTextarea = document.getElementById('positive-prompt-textarea');
+    negativePromptTextarea = document.getElementById('negative-prompt-textarea');
+    positivePromptCharCounter = document.getElementById('positive-prompt-char-counter');
+    negativePromptCharCounter = document.getElementById('negative-prompt-char-counter');
+    imageResolutionSelect = document.getElementById('image-resolution-select');
+    imageProviderSelect = document.getElementById('image-provider-select');
+    imageProviderHelp = document.getElementById('image-provider-help');
+    generateImageBtn = document.getElementById('generate-image-btn');
+    generatedImageDisplay = document.getElementById('generated-image-display');
+    downloadImageBtn = document.getElementById('download-image-btn');
+    regenerateImageBtn = document.getElementById('regenerate-image-btn');
+    imageGenerationInfo = document.getElementById('image-generation-info');
+    clearPositivePromptBtnTti = document.getElementById('clear-positive-prompt-btn');
+    clearNegativePromptBtnTti = document.getElementById('clear-negative-prompt-btn-tti');
+    
+    // 确保按钮元素存在
+    if (!generateImageBtn) {
+        console.error('无法找到generate-image-btn元素');
+        return;
+    }
+    
+    // 创建图像放大查看模态框
+    const imageModal = document.createElement('div');
+    imageModal.className = 'image-modal';
+    imageModal.innerHTML = `
+        <div class="image-modal-content">
+            <span class="close-image-modal">&times;</span>
+            <img src="" alt="放大的图像" class="modal-image">
+        </div>
+    `;
+    document.body.appendChild(imageModal);
+    
+    // 获取模态框元素
+    const modalImage = imageModal.querySelector('.modal-image');
+    const closeImageModalBtn = imageModal.querySelector('.close-image-modal');
+    
+    // 添加事件监听器
+    if (positivePromptTextarea) positivePromptTextarea.addEventListener('input', updatePositivePromptCharCount);
+    if (negativePromptTextarea) negativePromptTextarea.addEventListener('input', updateNegativePromptCharCount);
+    if (imageProviderSelect) imageProviderSelect.addEventListener('change', updateImageProviderHelp);
+    
+    // 确保按钮事件监听器正确绑定
+    if (generateImageBtn) {
+        // 移除可能存在的旧事件监听器
+        generateImageBtn.removeEventListener('click', generateImage);
+        // 添加新的事件监听器
+        generateImageBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('生成图像按钮被点击');
+            generateImage();
+        });
+        console.log('生成图像按钮事件监听器已绑定');
+    }
+    
+    if (downloadImageBtn) downloadImageBtn.addEventListener('click', downloadImage);
+    if (regenerateImageBtn) regenerateImageBtn.addEventListener('click', regenerateImage);
+    
+    // 图像点击放大查看事件
+    if (generatedImageDisplay) {
+        generatedImageDisplay.addEventListener('click', () => {
+            if (generatedImageData) {
+                modalImage.src = generatedImageData;
+                imageModal.style.display = 'block';
+            }
+        });
+    }
+    
+    // 关闭模态框事件
+    if (closeImageModalBtn) {
+        closeImageModalBtn.addEventListener('click', () => {
+            imageModal.style.display = 'none';
+        });
+    }
+    
+    // 点击模态框外部关闭模态框
+    if (imageModal) {
+        imageModal.addEventListener('click', (e) => {
+            if (e.target === imageModal) {
+                imageModal.style.display = 'none';
+            }
+        });
+    }
+    
+    // 清除正向提示词按钮事件
+    if (clearPositivePromptBtnTti) {
+        clearPositivePromptBtnTti.addEventListener('click', () => {
+            if (positivePromptTextarea) {
+                positivePromptTextarea.value = '';
+                updatePositivePromptCharCount();
+                showNotification('已清除正向提示词', 'success');
+            }
+        });
+    }
+    
+    // 清除反向提示词按钮事件
+    if (clearNegativePromptBtnTti) {
+        clearNegativePromptBtnTti.addEventListener('click', () => {
+            if (negativePromptTextarea) {
+                negativePromptTextarea.value = '';
+                updateNegativePromptCharCount();
+                showNotification('已清除反向提示词', 'success');
+            }
+        });
+    }
+    
+    // 初始化字数统计
+    updatePositivePromptCharCount();
+    updateNegativePromptCharCount();
+    
+    // 初始化图像提供商
+    if (imageProviderSelect) {
+        imageProvider = imageProviderSelect.value;
+    }
+    
+    // 初始化图像提供商帮助文本
+    updateImageProviderHelp();
+}
 
-// 获取模态框元素
-const modalImage = imageModal.querySelector('.modal-image');
-const closeImageModalBtn = imageModal.querySelector('.close-image-modal');
+// 图像模态框元素在initTextToImageElements函数中创建和获取
 
 // 存储生成的图像数据
 let generatedImageData = null;
@@ -3462,36 +3584,6 @@ async function generateImageWithJimeng({ prompt, negativePrompt, resolution }) {
 
     const payload = {
         model: 'see-dream',
-        input: {
-            action: 'TEXT_TO_IMAGE',
-            prompt,
-            parameters: {
-                size: jimengResolution,
-                image_size: jimengResolution,
-                resolution: jimengResolution,
-                image_count: 1,
-                response_format: 'url'
-            }
-        }
-    };
-
-    if (negativePrompt) {
-        payload.input.negative_prompt = negativePrompt;
-        payload.input.parameters.negative_prompt = negativePrompt;
-    }
-
-    console.log('调用即梦（字节跳动）接口参数:', payload);
-
-    const queryParams = {
-        Action: action,
-        Version: version
-    };
-
-    const canonicalQueryString = buildCanonicalQueryString(queryParams);
-    const requestUrl = `https://${host}/?${canonicalQueryString}`;
-
-    const payload = {
-        model: 'see-dream',
         prompt,
         size: jimengResolution,
         image_size: jimengResolution,
@@ -3613,7 +3705,15 @@ function loadGeneratedImage(imageUrl) {
 
 // 生成图像
 async function generateImage() {
+    console.log('generateImage函数被调用');
+    
     if (!positivePromptTextarea || !generateImageBtn || !generatedImageDisplay || !imageGenerationInfo) {
+        console.error('页面元素未正确加载', {
+            positivePromptTextarea: !!positivePromptTextarea,
+            generateImageBtn: !!generateImageBtn,
+            generatedImageDisplay: !!generatedImageDisplay,
+            imageGenerationInfo: !!imageGenerationInfo
+        });
         showNotification('页面元素未正确加载', 'error');
         return;
     }
@@ -3622,6 +3722,14 @@ async function generateImage() {
     const negativePrompt = negativePromptTextarea ? negativePromptTextarea.value.trim() : '';
     const imageResolution = imageResolutionSelect ? imageResolutionSelect.value : '1024x1024';
     const currentProvider = imageProviderSelect ? imageProviderSelect.value : (imageProvider || 'cogview');
+
+    console.log('生成图像参数', {
+        positivePrompt,
+        negativePrompt,
+        imageResolution,
+        currentProvider,
+        apiKey: currentProvider === 'cogview' ? !!apiKey : !!jimengApiKey
+    });
 
     if (!positivePrompt) {
         showNotification('请输入正向提示词', 'error');
@@ -3762,64 +3870,59 @@ function regenerateImage() {
     generateImage();
 }
 
-// 添加事件监听器
-if (positivePromptTextarea) positivePromptTextarea.addEventListener('input', updatePositivePromptCharCount);
-if (negativePromptTextarea) negativePromptTextarea.addEventListener('input', updateNegativePromptCharCount);
-if (generateImageBtn) generateImageBtn.addEventListener('click', generateImage);
-if (downloadImageBtn) downloadImageBtn.addEventListener('click', downloadImage);
-if (regenerateImageBtn) regenerateImageBtn.addEventListener('click', regenerateImage);
+// 全局测试函数，用于在控制台中测试按钮功能
+window.testGenerateImage = function() {
+    console.log('测试生成图像功能');
+    const generateBtn = document.getElementById('generate-image-btn');
+    if (generateBtn) {
+        console.log('找到生成图像按钮，模拟点击');
+        generateBtn.click();
+    } else {
+        console.error('未找到生成图像按钮');
+    }
+};
 
-// 图像点击放大查看事件
-if (generatedImageDisplay) {
-    generatedImageDisplay.addEventListener('click', () => {
-        if (generatedImageData) {
-            modalImage.src = generatedImageData;
-            imageModal.style.display = 'block';
-        }
+// 全局函数，用于检查按钮状态
+window.checkButtonState = function() {
+    const generateBtn = document.getElementById('generate-image-btn');
+    if (generateBtn) {
+        console.log('生成图像按钮状态:', {
+            存在: true,
+            禁用: generateBtn.disabled,
+            事件监听器: generateBtn.hasAttribute('data-event-bound'),
+            文本: generateBtn.textContent
+        });
+    } else {
+        console.error('未找到生成图像按钮');
+    }
+    
+    const positivePromptTextarea = document.getElementById('positive-prompt-textarea');
+    if (positivePromptTextarea) {
+        console.log('正向提示词输入框状态:', {
+            存在: true,
+            值: positivePromptTextarea.value
+        });
+    } else {
+        console.error('未找到正向提示词输入框');
+    }
+    
+    const imageProviderSelect = document.getElementById('image-provider-select');
+    if (imageProviderSelect) {
+        console.log('图像提供商选择器状态:', {
+            存在: true,
+            值: imageProviderSelect.value
+        });
+    } else {
+        console.error('未找到图像提供商选择器');
+    }
+    
+    console.log('API密钥状态:', {
+        智谱AI: !!apiKey,
+        即梦AI: !!jimengApiKey
     });
-}
+};
 
-// 关闭模态框事件
-if (closeImageModalBtn) {
-    closeImageModalBtn.addEventListener('click', () => {
-        imageModal.style.display = 'none';
-    });
-}
-
-// 点击模态框外部关闭模态框
-if (imageModal) {
-    imageModal.addEventListener('click', (e) => {
-        if (e.target === imageModal) {
-            imageModal.style.display = 'none';
-        }
-    });
-}
-
-// 清除正向提示词按钮事件
-if (clearPositivePromptBtnTti) {
-    clearPositivePromptBtnTti.addEventListener('click', () => {
-        if (positivePromptTextarea) {
-            positivePromptTextarea.value = '';
-            updatePositivePromptCharCount();
-            showNotification('已清除正向提示词', 'success');
-        }
-    });
-}
-
-// 清除反向提示词按钮事件
-if (clearNegativePromptBtnTti) {
-    clearNegativePromptBtnTti.addEventListener('click', () => {
-        if (negativePromptTextarea) {
-            negativePromptTextarea.value = '';
-            updateNegativePromptCharCount();
-            showNotification('已清除反向提示词', 'success');
-        }
-    });
-}
-
-// 初始化字数统计
-updatePositivePromptCharCount();
-updateNegativePromptCharCount();
+// 事件监听器已在initTextToImageElements函数中添加
 
 // 翻译历史记录功能
 // 获取DOM元素
@@ -4657,9 +4760,9 @@ function initTextSelectionFeature() {
     document.addEventListener('keyup', showChineseTranslation); // 添加keyup事件作为后备
 }
 
-// 在页面加载完成后初始化翻译历史和文本选择功能
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM加载完成，初始化应用...');
+// 初始化翻译历史和文本选择功能
+function initTranslationAndSelectionFeatures() {
+    console.log('初始化翻译历史和文本选择功能...');
     
     // 确保englishChineseMapping全局变量正确初始化并在window对象上可见
     if (!window.englishChineseMapping || !Array.isArray(window.englishChineseMapping)) {
@@ -4719,12 +4822,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 事件监听：当用户选择翻译结果中的英文文本时，更新对照文本框
-    translationOutputTextarea.addEventListener('mouseup', updateComparisonText);
-    translationOutputTextarea.addEventListener('keyup', updateComparisonText); // 支持键盘选择
-    translationOutputTextarea.addEventListener('select', updateComparisonText); // 处理键盘快捷键选择
+    if (translationOutputTextarea) {
+        translationOutputTextarea.addEventListener('mouseup', updateComparisonText);
+        translationOutputTextarea.addEventListener('keyup', updateComparisonText); // 支持键盘选择
+        translationOutputTextarea.addEventListener('select', updateComparisonText); // 处理键盘快捷键选择
+    }
 
-    console.log('应用初始化完成');
-});
+    console.log('翻译历史和文本选择功能初始化完成');
+}
 
 // 获取语言名称
 function getLanguageName(langCode) {
