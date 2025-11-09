@@ -57,11 +57,6 @@
                 <input type="password" id="jimeng-secret-key-top" class="jimeng-credential-input"
                     placeholder="请输入即梦 SecretKey">
             </div>
-            <div class="jimeng-credentials-fields jimeng-credential-region">
-                <label class="jimeng-credential-label" for="jimeng-region-top">区域</label>
-                <input type="text" id="jimeng-region-top" class="jimeng-credential-input"
-                    placeholder="如 ap-guangzhou">
-            </div>
             <button id="save-jimeng-credentials-top-btn" class="save-jimeng-credentials-btn"
                 title="保存即梦API配置">保存即梦配置</button>
         </div>
@@ -2075,10 +2070,9 @@
                         <div class="jimeng-credentials-grid">
                             <input type="password" id="jimeng-secret-id-input" placeholder="SecretId">
                             <input type="password" id="jimeng-secret-key-input" placeholder="SecretKey">
-                            <input type="text" id="jimeng-region-input" placeholder="区域（可选，默认 ap-guangzhou）">
                         </div>
                         <button id="save-jimeng-credentials-btn" class="save-api-key-btn">保存即梦配置</button>
-                        <p class="jimeng-credential-hint">即梦接口基于腾讯混元·即梦文本生图服务，需要腾讯云控制台获取的 SecretId、SecretKey 以及区域信息。</p>
+                        <p class="jimeng-credential-hint">即梦接口基于腾讯混元·即梦 SeeDream 4.0 文本生图服务，仅需腾讯云控制台获取的 SecretId 和 SecretKey。</p>
                     </div>
                     <div class="api-key-info">
                         <p>如何获取智谱AI API密钥：</p>
@@ -2099,7 +2093,6 @@
                         <ol>
                             <li>访问 <a href="https://cloud.tencent.com/product/hunyuan" target="_blank">腾讯云混元·即梦</a></li>
                             <li>开通混元·即梦服务并在访问管理中创建密钥对（SecretId、SecretKey）</li>
-                            <li>在控制台查看可用区域信息，如 <code>ap-guangzhou</code>、<code>ap-shanghai</code> 等</li>
                             <li>将凭证填写在上方输入框，并点击“保存即梦配置”</li>
                         </ol>
                     </div>

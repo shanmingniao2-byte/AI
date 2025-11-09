@@ -67,11 +67,6 @@ body.dark-mode h1 {
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
-.jimeng-credential-region {
-    max-width: 180px;
-    flex: 1 1 140px;
-}
-
 .save-jimeng-credentials-btn {
     padding: 12px 20px;
     background: linear-gradient(135deg, #6366f1, #8b5cf6);
