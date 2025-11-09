@@ -3378,7 +3378,7 @@ function updateImageProviderHelp() {
     if (!imageProviderHelp) return;
     const currentProvider = imageProviderSelect ? imageProviderSelect.value : (imageProvider || 'cogview');
     if (currentProvider === 'jimeng') {
-        imageProviderHelp.textContent = '使用即梦AI接口生成图像，请在页面顶部填写 SecretId、SecretKey 和区域后保存。';
+        imageProviderHelp.textContent = '使用即梦AI接口生成图像，请在页面顶部填写 SecretId 和 SecretKey 后保存。';
     } else {
         imageProviderHelp.textContent = '使用智谱AI CogView-4 模型生成图像，需要在“API密钥设置”中配置智谱AI API密钥。';
     }
@@ -3458,13 +3458,6 @@ async function hmacSha256(key, message) {
     const cryptoKey = await cryptoObj.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
     const signature = await cryptoObj.subtle.sign('HMAC', cryptoKey, encoder.encode(message));
     return new Uint8Array(signature);
-}
-
-function buildCanonicalQueryString(params) {
-    return Object.keys(params)
-        .sort((a, b) => a.localeCompare(b))
-        .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
-        .join('&');
 }
 
 async function generateTc3Authorization({
@@ -3597,6 +3590,12 @@ async function generateImageWithJimeng({ prompt, negativePrompt, resolution }) {
     }
 
     const payloadString = JSON.stringify(payload);
+    const signingHeaders = {
+        'Content-Type': 'application/json',
+        'X-TC-Action': action,
+        'X-TC-Version': version,
+        'X-TC-Timestamp': timestamp.toString()
+    };
     const { authorization } = await generateTc3Authorization({
         secretId: jimengSecretId,
         secretKey: jimengSecretKey,
@@ -3604,6 +3603,11 @@ async function generateImageWithJimeng({ prompt, negativePrompt, resolution }) {
         service,
         host,
         timestamp,
+        headers: signingHeaders
+    });
+
+    const headers = {
+        ...signingHeaders,
         canonicalQueryString
     });
 
