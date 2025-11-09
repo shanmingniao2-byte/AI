@@ -29,15 +29,11 @@ const closeApiKeyModalBtn = document.querySelector('.close-api-key-modal'); // �
 const geminiApiKeyInput = document.getElementById('gemini-api-key-input'); // Gemini API密钥输入框
 const saveGeminiApiKeyBtn = document.getElementById('save-gemini-api-key-btn'); // 保存Gemini API密钥按钮
 
-// 即梦API凭证相关DOM元素
-const jimengSecretIdInput = document.getElementById('jimeng-secret-id-input'); // 即梦SecretId输入框（弹窗）
-const jimengSecretKeyInput = document.getElementById('jimeng-secret-key-input'); // 即梦SecretKey输入框（弹窗）
-const jimengRegionInput = document.getElementById('jimeng-region-input'); // 即梦区域输入框（弹窗）
-const saveJimengCredentialsBtn = document.getElementById('save-jimeng-credentials-btn'); // 保存即梦凭证按钮（弹窗）
-const jimengSecretIdTopInput = document.getElementById('jimeng-secret-id-top'); // 即梦SecretId输入框（顶部）
-const jimengSecretKeyTopInput = document.getElementById('jimeng-secret-key-top'); // 即梦SecretKey输入框（顶部）
-const jimengRegionTopInput = document.getElementById('jimeng-region-top'); // 即梦区域输入框（顶部）
-const saveJimengCredentialsTopBtn = document.getElementById('save-jimeng-credentials-top-btn'); // 保存即梦凭证按钮（顶部）
+// 即梦API密钥相关DOM元素
+const jimengApiKeyInput = document.getElementById('jimeng-api-key-input'); // 即梦API密钥输入框（弹窗）
+const saveJimengApiKeyBtn = document.getElementById('save-jimeng-credentials-btn'); // 保存即梦API密钥按钮（弹窗）
+const jimengApiKeyTopInput = document.getElementById('jimeng-api-key-top'); // 即梦API密钥输入框（顶部）
+const saveJimengApiKeyTopBtn = document.getElementById('save-jimeng-credentials-top-btn'); // 保存即梦API密钥按钮（顶部）
 
 // 翻译功能相关DOM元素
 const sourceLanguageSelect = document.getElementById('source-language'); // 源语言选择器
@@ -103,55 +99,41 @@ let isShowingExpanded = false; // 当前是否显示扩写后的文本
 let isDarkMode = localStorage.getItem('dark-mode') === 'true'; // 深色模式状态
 let selectedPrompts = new Set(); // 存储已选中的提示词
 let uploadedImageData = null; // 存储上传的图片数据
-let jimengSecretId = localStorage.getItem('jimeng-secret-id') || ''; // 即梦AI SecretId
-let jimengSecretKey = localStorage.getItem('jimeng-secret-key') || ''; // 即梦AI SecretKey
-let jimengRegion = localStorage.getItem('jimeng-region') || 'ap-guangzhou'; // 即梦AI 区域
+let jimengApiKey = localStorage.getItem('jimeng-api-key') || ''; // 即梦AI API密钥
 let imageProvider = localStorage.getItem('image-provider') || 'cogview'; // 当前选择的文生图生成引擎
 
+localStorage.removeItem('jimeng-region');
+localStorage.removeItem('jimeng-secret-id');
+localStorage.removeItem('jimeng-secret-key');
+
 function updateJimengCredentialInputs() {
-    const regionValue = jimengRegion || '';
-    [jimengSecretIdInput, jimengSecretIdTopInput].forEach(input => {
+    [jimengApiKeyInput, jimengApiKeyTopInput].forEach(input => {
         if (input) {
-            input.value = jimengSecretId;
-        }
-    });
-    [jimengSecretKeyInput, jimengSecretKeyTopInput].forEach(input => {
-        if (input) {
-            input.value = jimengSecretKey;
-        }
-    });
-    [jimengRegionInput, jimengRegionTopInput].forEach(input => {
-        if (input) {
-            input.value = regionValue;
+            input.value = jimengApiKey;
         }
     });
 }
 
-function persistJimengCredentials(newSecretId, newSecretKey, newRegion) {
-    jimengSecretId = newSecretId;
-    jimengSecretKey = newSecretKey;
-    jimengRegion = newRegion || 'ap-guangzhou';
+function persistJimengApiKey(newApiKey) {
+    jimengApiKey = newApiKey;
 
-    localStorage.setItem('jimeng-secret-id', jimengSecretId);
-    localStorage.setItem('jimeng-secret-key', jimengSecretKey);
-    localStorage.setItem('jimeng-region', jimengRegion);
+    localStorage.setItem('jimeng-api-key', jimengApiKey);
+    localStorage.removeItem('jimeng-region');
 
     updateJimengCredentialInputs();
 }
 
-function handleJimengCredentialSave(secretIdInput, secretKeyInput, regionInput) {
-    const newSecretId = secretIdInput ? secretIdInput.value.trim() : '';
-    const newSecretKey = secretKeyInput ? secretKeyInput.value.trim() : '';
-    const newRegion = regionInput ? regionInput.value.trim() : '';
+function handleJimengCredentialSave(apiKeyInput) {
+    const newApiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
 
-    if (!newSecretId || !newSecretKey) {
-        showNotification('请填写完整的即梦 SecretId 和 SecretKey', 'error');
+    if (!newApiKey) {
+        showNotification('请输入有效的即梦 API 密钥', 'error');
         return;
     }
 
-    persistJimengCredentials(newSecretId, newSecretKey, newRegion);
+    persistJimengApiKey(newApiKey);
 
-    showNotification('即梦API配置已保存', 'success');
+    showNotification('即梦API密钥已保存', 'success');
 }
 
 const historyViewState = {
@@ -391,16 +373,16 @@ saveGeminiApiKeyBtn.addEventListener('click', () => {
     }
 });
 
-// 保存即梦API凭证
-if (saveJimengCredentialsBtn) {
-    saveJimengCredentialsBtn.addEventListener('click', () => {
-        handleJimengCredentialSave(jimengSecretIdInput, jimengSecretKeyInput, jimengRegionInput);
+// 保存即梦API密钥
+if (saveJimengApiKeyBtn) {
+    saveJimengApiKeyBtn.addEventListener('click', () => {
+        handleJimengCredentialSave(jimengApiKeyInput);
     });
 }
 
-if (saveJimengCredentialsTopBtn) {
-    saveJimengCredentialsTopBtn.addEventListener('click', () => {
-        handleJimengCredentialSave(jimengSecretIdTopInput, jimengSecretKeyTopInput, jimengRegionTopInput);
+if (saveJimengApiKeyTopBtn) {
+    saveJimengApiKeyTopBtn.addEventListener('click', () => {
+        handleJimengCredentialSave(jimengApiKeyTopInput);
     });
 }
 
@@ -3376,7 +3358,7 @@ function updateNegativePromptCharCount() {
 function getImageProviderDisplayName(provider) {
     switch (provider) {
         case 'jimeng':
-            return '即梦AI';
+            return '即梦AI（字节跳动）';
         case 'cogview':
         default:
             return '智谱AI · CogView-4';
@@ -3387,7 +3369,7 @@ function updateImageProviderHelp() {
     if (!imageProviderHelp) return;
     const currentProvider = imageProviderSelect ? imageProviderSelect.value : (imageProvider || 'cogview');
     if (currentProvider === 'jimeng') {
-        imageProviderHelp.textContent = '使用即梦AI接口生成图像，请在页面顶部填写 SecretId、SecretKey 和区域后保存。';
+        imageProviderHelp.textContent = '使用即梦AI（字节跳动）接口生成图像，请在页面顶部填写 API 密钥后保存。';
     } else {
         imageProviderHelp.textContent = '使用智谱AI CogView-4 模型生成图像，需要在“API密钥设置”中配置智谱AI API密钥。';
     }
@@ -3423,83 +3405,6 @@ async function fetchWithRetry(url, options, maxRetries = 2, retryDelay = 2000) {
     }
 
     throw lastError;
-}
-
-function getCrypto() {
-    if (typeof window === 'undefined') {
-        return null;
-    }
-    return window.crypto || window.msCrypto || null;
-}
-
-function bufferToHex(buffer) {
-    const view = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
-    return Array.from(view).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function sha256Hex(message) {
-    const cryptoObj = getCrypto();
-    if (!cryptoObj || !cryptoObj.subtle) {
-        throw new Error('当前浏览器不支持所需的加密算法，无法调用即梦接口');
-    }
-    const encoder = new TextEncoder();
-    const data = encoder.encode(message);
-    const hashBuffer = await cryptoObj.subtle.digest('SHA-256', data);
-    return bufferToHex(hashBuffer);
-}
-
-async function hmacSha256(key, message) {
-    const cryptoObj = getCrypto();
-    if (!cryptoObj || !cryptoObj.subtle) {
-        throw new Error('当前浏览器不支持所需的加密算法，无法调用即梦接口');
-    }
-    const encoder = new TextEncoder();
-    let keyData;
-    if (key instanceof Uint8Array) {
-        keyData = key;
-    } else if (key instanceof ArrayBuffer) {
-        keyData = new Uint8Array(key);
-    } else if (typeof key === 'string') {
-        keyData = encoder.encode(key);
-    } else {
-        keyData = new Uint8Array(key);
-    }
-    const cryptoKey = await cryptoObj.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-    const signature = await cryptoObj.subtle.sign('HMAC', cryptoKey, encoder.encode(message));
-    return new Uint8Array(signature);
-}
-
-async function generateTc3Authorization({ secretId, secretKey, payloadString, service, host, timestamp }) {
-    const algorithm = 'TC3-HMAC-SHA256';
-    const httpMethod = 'POST';
-    const canonicalUri = '/';
-    const canonicalQueryString = '';
-    const canonicalHeaders = `content-type:application/json\nhost:${host}\n`;
-    const signedHeaders = 'content-type;host';
-    const hashedPayload = await sha256Hex(payloadString);
-    const canonicalRequest = [
-        httpMethod,
-        canonicalUri,
-        canonicalQueryString,
-        canonicalHeaders,
-        signedHeaders,
-        hashedPayload
-    ].join('\n');
-
-    const hashedCanonicalRequest = await sha256Hex(canonicalRequest);
-    const date = new Date(timestamp * 1000).toISOString().slice(0, 10).replace(/-/g, '');
-    const credentialScope = `${date}/${service}/tc3_request`;
-    const stringToSign = `${algorithm}\n${timestamp}\n${credentialScope}\n${hashedCanonicalRequest}`;
-
-    const kDate = await hmacSha256(`TC3${secretKey}`, date);
-    const kService = await hmacSha256(kDate, service);
-    const kSigning = await hmacSha256(kService, 'tc3_request');
-    const signatureArray = await hmacSha256(kSigning, stringToSign);
-    const signature = bufferToHex(signatureArray);
-
-    const authorization = `${algorithm} Credential=${secretId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
-
-    return { authorization };
 }
 
 async function generateImageWithCogview({ prompt, negativePrompt, resolution }) {
@@ -3552,86 +3457,97 @@ async function generateImageWithCogview({ prompt, negativePrompt, resolution }) 
 }
 
 async function generateImageWithJimeng({ prompt, negativePrompt, resolution }) {
-    const host = 'hunyuan.tencentcloudapi.com';
-    const service = 'hunyuan';
-    const action = 'TextToImage';
-    const version = '2023-09-01';
-    const timestamp = Math.floor(Date.now() / 1000);
+    const endpoint = 'https://ark-api.open.doubao.com/v1/images/generations';
     const jimengResolution = resolution.replace(/[x×]/i, '*');
 
     const payload = {
-        Prompt: prompt,
-        Resolution: jimengResolution,
-        RspImgType: 'base64'
+        model: 'see-dream',
+        input: {
+            action: 'TEXT_TO_IMAGE',
+            prompt,
+            parameters: {
+                size: jimengResolution,
+                image_size: jimengResolution,
+                resolution: jimengResolution,
+                image_count: 1,
+                response_format: 'url'
+            }
+        }
     };
 
     if (negativePrompt) {
-        payload.NegativePrompt = negativePrompt;
+        payload.input.negative_prompt = negativePrompt;
+        payload.input.parameters.negative_prompt = negativePrompt;
     }
 
-    const payloadString = JSON.stringify(payload);
-    const { authorization } = await generateTc3Authorization({
-        secretId: jimengSecretId,
-        secretKey: jimengSecretKey,
-        payloadString,
-        service,
-        host,
-        timestamp
-    });
+    console.log('调用即梦（字节跳动）接口参数:', payload);
 
-    const headers = {
-        'Content-Type': 'application/json',
-        'X-TC-Action': action,
-        'X-TC-Version': version,
-        'X-TC-Timestamp': timestamp.toString(),
-        'Authorization': authorization
-    };
-
-    if (jimengRegion) {
-        headers['X-TC-Region'] = jimengRegion;
-    }
-
-    console.log('调用即梦接口参数:', payload);
-
-    const response = await fetch(`https://${host}`, {
+    const response = await fetchWithRetry(endpoint, {
         method: 'POST',
-        headers,
-        body: payloadString
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jimengApiKey}`
+        },
+        body: JSON.stringify(payload)
     });
 
     const data = await response.json();
-    console.log('即梦接口响应:', data);
+    console.log('即梦（字节跳动）接口响应:', data);
 
     if (!response.ok) {
-        const message = data?.Response?.Error?.Message || data?.error?.message || `请求失败，状态码: ${response.status}`;
+        const message = data?.error?.message || data?.msg || `请求失败，状态码: ${response.status}`;
         throw new Error(message);
     }
 
-    if (data?.Response?.Error) {
-        throw new Error(`${data.Response.Error.Message || '调用即梦接口失败'} (代码: ${data.Response.Error.Code || 'Unknown'})`);
+    if (data?.error) {
+        throw new Error(data.error.message || '调用即梦接口失败');
     }
 
-    const responseData = data?.Response || {};
     let imageUrl = '';
 
-    if (responseData.ResultImageUrl) {
-        imageUrl = responseData.ResultImageUrl;
-    } else if (responseData.ResultImage) {
-        imageUrl = `data:image/png;base64,${responseData.ResultImage}`;
-    } else if (Array.isArray(responseData.ResultImageList) && responseData.ResultImageList.length > 0) {
-        const firstItem = responseData.ResultImageList[0];
-        if (firstItem?.ImageUrl) {
-            imageUrl = firstItem.ImageUrl;
-        } else if (firstItem?.Image) {
-            imageUrl = `data:image/png;base64,${firstItem.Image}`;
+    if (Array.isArray(data?.data) && data.data.length > 0) {
+        const firstItem = data.data[0];
+        if (firstItem?.url) {
+            imageUrl = firstItem.url;
+        } else if (firstItem?.image_url) {
+            imageUrl = firstItem.image_url;
+        } else if (firstItem?.b64_json) {
+            imageUrl = `data:image/png;base64,${firstItem.b64_json}`;
+        } else if (firstItem?.image_base64) {
+            imageUrl = `data:image/png;base64,${firstItem.image_base64}`;
+        } else if (Array.isArray(firstItem?.content)) {
+            const imageContent = firstItem.content.find(item => item?.type === 'image_url' || item?.image_url || item?.image_base64);
+            if (imageContent?.image_url?.url) {
+                imageUrl = imageContent.image_url.url;
+            } else if (imageContent?.image_url) {
+                imageUrl = typeof imageContent.image_url === 'string' ? imageContent.image_url : imageContent.image_url.url;
+            } else if (imageContent?.image_base64) {
+                imageUrl = `data:image/png;base64,${imageContent.image_base64}`;
+            }
         }
-    } else if (Array.isArray(responseData.Images) && responseData.Images.length > 0) {
-        const firstItem = responseData.Images[0];
-        if (firstItem?.Url) {
-            imageUrl = firstItem.Url;
-        } else if (typeof firstItem === 'string') {
-            imageUrl = firstItem.startsWith('http') ? firstItem : `data:image/png;base64,${firstItem}`;
+    }
+
+    if (!imageUrl && Array.isArray(data?.result?.images) && data.result.images.length > 0) {
+        const firstImage = data.result.images[0];
+        if (typeof firstImage === 'string') {
+            imageUrl = firstImage.startsWith('http') ? firstImage : `data:image/png;base64,${firstImage}`;
+        } else if (firstImage?.url) {
+            imageUrl = firstImage.url;
+        } else if (firstImage?.b64_json) {
+            imageUrl = `data:image/png;base64,${firstImage.b64_json}`;
         }
+    }
+
+    if (!imageUrl && data?.result_url) {
+        imageUrl = data.result_url;
+    }
+
+    if (!imageUrl && data?.image_url) {
+        imageUrl = data.image_url;
+    }
+
+    if (!imageUrl && typeof data === 'string') {
+        imageUrl = data.startsWith('http') ? data : `data:image/png;base64,${data}`;
     }
 
     if (!imageUrl) {
@@ -3641,7 +3557,7 @@ async function generateImageWithJimeng({ prompt, negativePrompt, resolution }) {
     return {
         imageUrl,
         providerName: getImageProviderDisplayName('jimeng'),
-        requestId: responseData.RequestId || ''
+        requestId: data?.request_id || data?.id || data?.RequestId || ''
     };
 }
 
@@ -3691,8 +3607,8 @@ async function generateImage() {
         return;
     }
 
-    if (currentProvider === 'jimeng' && (!jimengSecretId || !jimengSecretKey)) {
-        showNotification('请先设置即梦 SecretId 和 SecretKey', 'error');
+    if (currentProvider === 'jimeng' && !jimengApiKey) {
+        showNotification('请先设置即梦 API 密钥', 'error');
         return;
     }
 

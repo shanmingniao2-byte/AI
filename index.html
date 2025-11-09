@@ -46,24 +46,14 @@
 
         <h1>GLM多语言互译工具</h1>
 
-        <div class="jimeng-credentials-bar" aria-label="即梦AI API 凭证设置">
+        <div class="jimeng-credentials-bar" aria-label="即梦AI API 密钥设置">
             <div class="jimeng-credentials-fields">
-                <label class="jimeng-credential-label" for="jimeng-secret-id-top">SecretId</label>
-                <input type="password" id="jimeng-secret-id-top" class="jimeng-credential-input"
-                    placeholder="请输入即梦 SecretId">
-            </div>
-            <div class="jimeng-credentials-fields">
-                <label class="jimeng-credential-label" for="jimeng-secret-key-top">SecretKey</label>
-                <input type="password" id="jimeng-secret-key-top" class="jimeng-credential-input"
-                    placeholder="请输入即梦 SecretKey">
-            </div>
-            <div class="jimeng-credentials-fields jimeng-credential-region">
-                <label class="jimeng-credential-label" for="jimeng-region-top">区域</label>
-                <input type="text" id="jimeng-region-top" class="jimeng-credential-input"
-                    placeholder="如 ap-guangzhou">
+                <label class="jimeng-credential-label" for="jimeng-api-key-top">API 密钥</label>
+                <input type="password" id="jimeng-api-key-top" class="jimeng-credential-input"
+                    placeholder="请输入即梦 API 密钥">
             </div>
             <button id="save-jimeng-credentials-top-btn" class="save-jimeng-credentials-btn"
-                title="保存即梦API配置">保存即梦配置</button>
+                title="保存即梦API密钥">保存即梦密钥</button>
         </div>
 
         <div class="translation-container">
@@ -2071,14 +2061,10 @@
                         <button id="save-gemini-api-key-btn" class="save-api-key-btn">保存密钥</button>
                     </div>
                     <div class="api-key-form">
-                        <label>即梦 API 凭证：</label>
-                        <div class="jimeng-credentials-grid">
-                            <input type="password" id="jimeng-secret-id-input" placeholder="SecretId">
-                            <input type="password" id="jimeng-secret-key-input" placeholder="SecretKey">
-                            <input type="text" id="jimeng-region-input" placeholder="区域（可选，默认 ap-guangzhou）">
-                        </div>
-                        <button id="save-jimeng-credentials-btn" class="save-api-key-btn">保存即梦配置</button>
-                        <p class="jimeng-credential-hint">即梦接口基于腾讯混元·即梦文本生图服务，需要腾讯云控制台获取的 SecretId、SecretKey 以及区域信息。</p>
+                        <label for="jimeng-api-key-input">即梦 API 密钥：</label>
+                        <input type="password" id="jimeng-api-key-input" placeholder="请输入即梦 API 密钥">
+                        <button id="save-jimeng-credentials-btn" class="save-api-key-btn">保存即梦密钥</button>
+                        <p class="jimeng-credential-hint">即梦接口基于字节跳动即梦 SeeDream 4.0 文本生图服务，请填写最新控制台提供的 API 密钥。</p>
                     </div>
                     <div class="api-key-info">
                         <p>如何获取智谱AI API密钥：</p>
@@ -2095,12 +2081,11 @@
                             <li>在控制台中创建API密钥</li>
                             <li>复制密钥并粘贴到上方输入框</li>
                         </ol>
-                        <p>如何获取即梦 API 凭证：</p>
+                        <p>如何获取即梦 API 密钥：</p>
                         <ol>
-                            <li>访问 <a href="https://cloud.tencent.com/product/hunyuan" target="_blank">腾讯云混元·即梦</a></li>
-                            <li>开通混元·即梦服务并在访问管理中创建密钥对（SecretId、SecretKey）</li>
-                            <li>在控制台查看可用区域信息，如 <code>ap-guangzhou</code>、<code>ap-shanghai</code> 等</li>
-                            <li>将凭证填写在上方输入框，并点击“保存即梦配置”</li>
+                            <li>访问 <a href="https://www.volcengine.com/product/jimeng" target="_blank">字节跳动即梦开放平台</a></li>
+                            <li>开通 SeeDream 4.0 文生图服务并在控制台中创建 API 密钥</li>
+                            <li>将密钥填写在上方输入框，并点击“保存即梦密钥”</li>
                         </ol>
                     </div>
                 </div>
