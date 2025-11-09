@@ -3482,6 +3482,32 @@ async function generateImageWithJimeng({ prompt, negativePrompt, resolution }) {
 
     console.log('调用即梦（字节跳动）接口参数:', payload);
 
+    const queryParams = {
+        Action: action,
+        Version: version
+    };
+
+    const canonicalQueryString = buildCanonicalQueryString(queryParams);
+    const requestUrl = `https://${host}/?${canonicalQueryString}`;
+
+    const payload = {
+        model: 'see-dream',
+        prompt,
+        size: jimengResolution,
+        image_size: jimengResolution,
+        resolution: jimengResolution,
+        n: 1,
+        image_count: 1,
+        response_format: 'url'
+    };
+
+    if (negativePrompt) {
+        payload.negative_prompt = negativePrompt;
+        payload.negativePrompt = negativePrompt;
+    }
+
+    console.log('调用即梦（字节跳动）接口参数:', payload);
+
     const response = await fetchWithRetry(endpoint, {
         method: 'POST',
         headers: {
