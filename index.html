@@ -46,6 +46,26 @@
 
         <h1>GLM多语言互译工具</h1>
 
+        <div class="jimeng-credentials-bar" aria-label="即梦AI API 凭证设置">
+            <div class="jimeng-credentials-fields">
+                <label class="jimeng-credential-label" for="jimeng-secret-id-top">SecretId</label>
+                <input type="password" id="jimeng-secret-id-top" class="jimeng-credential-input"
+                    placeholder="请输入即梦 SecretId">
+            </div>
+            <div class="jimeng-credentials-fields">
+                <label class="jimeng-credential-label" for="jimeng-secret-key-top">SecretKey</label>
+                <input type="password" id="jimeng-secret-key-top" class="jimeng-credential-input"
+                    placeholder="请输入即梦 SecretKey">
+            </div>
+            <div class="jimeng-credentials-fields jimeng-credential-region">
+                <label class="jimeng-credential-label" for="jimeng-region-top">区域</label>
+                <input type="text" id="jimeng-region-top" class="jimeng-credential-input"
+                    placeholder="如 ap-guangzhou">
+            </div>
+            <button id="save-jimeng-credentials-top-btn" class="save-jimeng-credentials-btn"
+                title="保存即梦API配置">保存即梦配置</button>
+        </div>
+
         <div class="translation-container">
             <div class="input-section">
                 <div class="language-selector">
@@ -1936,7 +1956,7 @@
                                     <div class="image-provider-selector-inline">
                                         <select id="image-provider-select" class="image-provider-select">
                                             <option value="cogview">智谱AI · CogView-4</option>
-                                            <option value="jimeng">腾讯混元 · 即梦</option>
+                                            <option value="jimeng">即梦AI</option>
                                         </select>
                                     </div>
                                     <div class="resolution-selector-inline">

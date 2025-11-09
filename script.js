@@ -30,10 +30,14 @@ const geminiApiKeyInput = document.getElementById('gemini-api-key-input'); // Ge
 const saveGeminiApiKeyBtn = document.getElementById('save-gemini-api-key-btn'); // 保存Gemini API密钥按钮
 
 // 即梦API凭证相关DOM元素
-const jimengSecretIdInput = document.getElementById('jimeng-secret-id-input'); // 即梦SecretId输入框
-const jimengSecretKeyInput = document.getElementById('jimeng-secret-key-input'); // 即梦SecretKey输入框
-const jimengRegionInput = document.getElementById('jimeng-region-input'); // 即梦区域输入框
-const saveJimengCredentialsBtn = document.getElementById('save-jimeng-credentials-btn'); // 保存即梦凭证按钮
+const jimengSecretIdInput = document.getElementById('jimeng-secret-id-input'); // 即梦SecretId输入框（弹窗）
+const jimengSecretKeyInput = document.getElementById('jimeng-secret-key-input'); // 即梦SecretKey输入框（弹窗）
+const jimengRegionInput = document.getElementById('jimeng-region-input'); // 即梦区域输入框（弹窗）
+const saveJimengCredentialsBtn = document.getElementById('save-jimeng-credentials-btn'); // 保存即梦凭证按钮（弹窗）
+const jimengSecretIdTopInput = document.getElementById('jimeng-secret-id-top'); // 即梦SecretId输入框（顶部）
+const jimengSecretKeyTopInput = document.getElementById('jimeng-secret-key-top'); // 即梦SecretKey输入框（顶部）
+const jimengRegionTopInput = document.getElementById('jimeng-region-top'); // 即梦区域输入框（顶部）
+const saveJimengCredentialsTopBtn = document.getElementById('save-jimeng-credentials-top-btn'); // 保存即梦凭证按钮（顶部）
 
 // 翻译功能相关DOM元素
 const sourceLanguageSelect = document.getElementById('source-language'); // 源语言选择器
@@ -99,10 +103,56 @@ let isShowingExpanded = false; // 当前是否显示扩写后的文本
 let isDarkMode = localStorage.getItem('dark-mode') === 'true'; // 深色模式状态
 let selectedPrompts = new Set(); // 存储已选中的提示词
 let uploadedImageData = null; // 存储上传的图片数据
-let jimengSecretId = localStorage.getItem('jimeng-secret-id') || ''; // 腾讯混元·即梦 SecretId
-let jimengSecretKey = localStorage.getItem('jimeng-secret-key') || ''; // 腾讯混元·即梦 SecretKey
-let jimengRegion = localStorage.getItem('jimeng-region') || 'ap-guangzhou'; // 腾讯混元·即梦区域
+let jimengSecretId = localStorage.getItem('jimeng-secret-id') || ''; // 即梦AI SecretId
+let jimengSecretKey = localStorage.getItem('jimeng-secret-key') || ''; // 即梦AI SecretKey
+let jimengRegion = localStorage.getItem('jimeng-region') || 'ap-guangzhou'; // 即梦AI 区域
 let imageProvider = localStorage.getItem('image-provider') || 'cogview'; // 当前选择的文生图生成引擎
+
+function updateJimengCredentialInputs() {
+    const regionValue = jimengRegion || '';
+    [jimengSecretIdInput, jimengSecretIdTopInput].forEach(input => {
+        if (input) {
+            input.value = jimengSecretId;
+        }
+    });
+    [jimengSecretKeyInput, jimengSecretKeyTopInput].forEach(input => {
+        if (input) {
+            input.value = jimengSecretKey;
+        }
+    });
+    [jimengRegionInput, jimengRegionTopInput].forEach(input => {
+        if (input) {
+            input.value = regionValue;
+        }
+    });
+}
+
+function persistJimengCredentials(newSecretId, newSecretKey, newRegion) {
+    jimengSecretId = newSecretId;
+    jimengSecretKey = newSecretKey;
+    jimengRegion = newRegion || 'ap-guangzhou';
+
+    localStorage.setItem('jimeng-secret-id', jimengSecretId);
+    localStorage.setItem('jimeng-secret-key', jimengSecretKey);
+    localStorage.setItem('jimeng-region', jimengRegion);
+
+    updateJimengCredentialInputs();
+}
+
+function handleJimengCredentialSave(secretIdInput, secretKeyInput, regionInput) {
+    const newSecretId = secretIdInput ? secretIdInput.value.trim() : '';
+    const newSecretKey = secretKeyInput ? secretKeyInput.value.trim() : '';
+    const newRegion = regionInput ? regionInput.value.trim() : '';
+
+    if (!newSecretId || !newSecretKey) {
+        showNotification('请填写完整的即梦 SecretId 和 SecretKey', 'error');
+        return;
+    }
+
+    persistJimengCredentials(newSecretId, newSecretKey, newRegion);
+
+    showNotification('即梦API配置已保存', 'success');
+}
 
 const historyViewState = {
     items: [],
@@ -138,17 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
         geminiApiKeyInput.value = geminiApiKey;
     }
 
-    if (jimengSecretId && jimengSecretIdInput) {
-        jimengSecretIdInput.value = jimengSecretId;
-    }
-
-    if (jimengSecretKey && jimengSecretKeyInput) {
-        jimengSecretKeyInput.value = jimengSecretKey;
-    }
-
-    if (jimengRegionInput) {
-        jimengRegionInput.value = jimengRegion || '';
-    }
+    updateJimengCredentialInputs();
 
     if (imageProviderSelect) {
         imageProviderSelect.value = imageProvider;
@@ -352,26 +392,17 @@ saveGeminiApiKeyBtn.addEventListener('click', () => {
 });
 
 // 保存即梦API凭证
-saveJimengCredentialsBtn.addEventListener('click', () => {
-    const newSecretId = jimengSecretIdInput.value.trim();
-    const newSecretKey = jimengSecretKeyInput.value.trim();
-    const newRegion = (jimengRegionInput.value || '').trim();
+if (saveJimengCredentialsBtn) {
+    saveJimengCredentialsBtn.addEventListener('click', () => {
+        handleJimengCredentialSave(jimengSecretIdInput, jimengSecretKeyInput, jimengRegionInput);
+    });
+}
 
-    if (!newSecretId || !newSecretKey) {
-        showNotification('请填写完整的即梦 SecretId 和 SecretKey', 'error');
-        return;
-    }
-
-    jimengSecretId = newSecretId;
-    jimengSecretKey = newSecretKey;
-    jimengRegion = newRegion || 'ap-guangzhou';
-
-    localStorage.setItem('jimeng-secret-id', jimengSecretId);
-    localStorage.setItem('jimeng-secret-key', jimengSecretKey);
-    localStorage.setItem('jimeng-region', jimengRegion);
-
-    showNotification('即梦API配置已保存', 'success');
-});
+if (saveJimengCredentialsTopBtn) {
+    saveJimengCredentialsTopBtn.addEventListener('click', () => {
+        handleJimengCredentialSave(jimengSecretIdTopInput, jimengSecretKeyTopInput, jimengRegionTopInput);
+    });
+}
 
 if (imageProviderSelect) {
     imageProviderSelect.addEventListener('change', () => {
@@ -3345,7 +3376,7 @@ function updateNegativePromptCharCount() {
 function getImageProviderDisplayName(provider) {
     switch (provider) {
         case 'jimeng':
-            return '腾讯混元·即梦';
+            return '即梦AI';
         case 'cogview':
         default:
             return '智谱AI · CogView-4';
@@ -3356,7 +3387,7 @@ function updateImageProviderHelp() {
     if (!imageProviderHelp) return;
     const currentProvider = imageProviderSelect ? imageProviderSelect.value : (imageProvider || 'cogview');
     if (currentProvider === 'jimeng') {
-        imageProviderHelp.textContent = '使用腾讯混元·即梦接口生成图像，需要在“API密钥设置”中配置 SecretId、SecretKey 和区域。';
+        imageProviderHelp.textContent = '使用即梦AI接口生成图像，请在页面顶部填写 SecretId、SecretKey 和区域后保存。';
     } else {
         imageProviderHelp.textContent = '使用智谱AI CogView-4 模型生成图像，需要在“API密钥设置”中配置智谱AI API密钥。';
     }
