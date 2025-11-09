@@ -3459,6 +3459,13 @@ async function generateImageWithCogview({ prompt, negativePrompt, resolution }) 
 async function generateImageWithJimeng({ prompt, negativePrompt, resolution }) {
     const endpoint = 'https://ark-api.open.doubao.com/v1/images/generations';
     const jimengResolution = resolution.replace(/[x×]/i, '*');
+    const queryParams = {
+        Action: action,
+        Version: version
+    };
+
+    const canonicalQueryString = buildCanonicalQueryString(queryParams);
+    const requestUrl = `https://${host}/?${canonicalQueryString}`;
 
     const payload = {
         model: 'see-dream',
