@@ -26,6 +26,101 @@ body.dark-mode h1 {
     color: #bb86fc;
 }
 
+.jimeng-credentials-bar {
+    margin: 16px 0 24px;
+    padding: 16px;
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.jimeng-credentials-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 200px;
+    flex: 1 1 200px;
+}
+
+.jimeng-credential-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.jimeng-credential-input {
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.jimeng-credential-input:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.jimeng-credential-region {
+    max-width: 180px;
+    flex: 1 1 140px;
+}
+
+.save-jimeng-credentials-btn {
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    flex: 0 0 auto;
+}
+
+.save-jimeng-credentials-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.35);
+}
+
+.save-jimeng-credentials-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 6px 15px rgba(99, 102, 241, 0.25);
+}
+
+body.dark-mode .jimeng-credentials-bar {
+    background: #2d2d2d;
+    border-color: #3a3a3a;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .jimeng-credential-label {
+    color: #d1d5db;
+}
+
+body.dark-mode .jimeng-credential-input {
+    background: #3c3c3c;
+    border-color: #555;
+    color: #e0e0e0;
+}
+
+body.dark-mode .jimeng-credential-input:focus {
+    border-color: #bb86fc;
+    box-shadow: 0 0 0 3px rgba(187, 134, 252, 0.2);
+}
+
+body.dark-mode .save-jimeng-credentials-btn {
+    background: linear-gradient(135deg, #bb86fc, #8c62ff);
+    color: #121212;
+}
+
 body.dark-mode .api-key-container,
 body.dark-mode .input-section,
 body.dark-mode .output-section,
@@ -546,6 +641,38 @@ body.dark-mode .prompt-output-header h3 {
     gap: 8px;
 }
 
+.image-provider-selector-inline {
+    margin-right: 8px;
+}
+
+.image-provider-select {
+    padding: 4px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 12px;
+    background-color: #fff;
+    color: #333;
+    min-width: 160px;
+    transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+}
+
+body.dark-mode .image-provider-select {
+    background-color: #2d2d2d;
+    color: #e0e0e0;
+    border-color: #555;
+}
+
+.image-provider-select:focus {
+    outline: none;
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+body.dark-mode .image-provider-select:focus {
+    border-color: #bb86fc;
+    box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.2);
+}
+
 .resolution-selector-inline {
     margin-right: 8px;
 }
@@ -934,6 +1061,28 @@ body.dark-mode .api-key-toggle-btn svg {
     border-radius: 4px;
     margin-bottom: 15px;
     font-size: 14px;
+}
+
+.jimeng-credentials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.jimeng-credentials-grid input {
+    margin-bottom: 0;
+}
+
+.jimeng-credential-hint {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.6;
+    margin-top: 8px;
+}
+
+body.dark-mode .jimeng-credential-hint {
+    color: #aaa;
 }
 
 .save-api-key-btn {
@@ -2835,6 +2984,17 @@ body.dark-mode .generate-image-btn:disabled {
 .generate-image-btn svg {
     width: 20px;
     height: 20px;
+}
+
+.image-provider-help {
+    margin-top: 12px;
+    font-size: 12px;
+    color: #666;
+    line-height: 1.6;
+}
+
+body.dark-mode .image-provider-help {
+    color: #aaa;
 }
 
 .generated-image-container {

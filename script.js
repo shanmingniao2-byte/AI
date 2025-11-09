@@ -29,6 +29,16 @@ const closeApiKeyModalBtn = document.querySelector('.close-api-key-modal'); // �
 const geminiApiKeyInput = document.getElementById('gemini-api-key-input'); // Gemini API密钥输入框
 const saveGeminiApiKeyBtn = document.getElementById('save-gemini-api-key-btn'); // 保存Gemini API密钥按钮
 
+// 即梦API凭证相关DOM元素
+const jimengSecretIdInput = document.getElementById('jimeng-secret-id-input'); // 即梦SecretId输入框（弹窗）
+const jimengSecretKeyInput = document.getElementById('jimeng-secret-key-input'); // 即梦SecretKey输入框（弹窗）
+const jimengRegionInput = document.getElementById('jimeng-region-input'); // 即梦区域输入框（弹窗）
+const saveJimengCredentialsBtn = document.getElementById('save-jimeng-credentials-btn'); // 保存即梦凭证按钮（弹窗）
+const jimengSecretIdTopInput = document.getElementById('jimeng-secret-id-top'); // 即梦SecretId输入框（顶部）
+const jimengSecretKeyTopInput = document.getElementById('jimeng-secret-key-top'); // 即梦SecretKey输入框（顶部）
+const jimengRegionTopInput = document.getElementById('jimeng-region-top'); // 即梦区域输入框（顶部）
+const saveJimengCredentialsTopBtn = document.getElementById('save-jimeng-credentials-top-btn'); // 保存即梦凭证按钮（顶部）
+
 // 翻译功能相关DOM元素
 const sourceLanguageSelect = document.getElementById('source-language'); // 源语言选择器
 const targetLanguageSelect = document.getElementById('target-language'); // 目标语言选择器
@@ -80,6 +90,8 @@ const expandPromptBtn = document.getElementById('expand-prompt-btn'); // 扩写�
 const usePromptBtn = document.getElementById('use-prompt-btn'); // 使用提示词按钮
 const promptCharCounter = document.getElementById('prompt-char-counter'); // 提示词字符计数器
 const imageModelSelect = document.getElementById('image-model-select'); // 图片模型选择器
+const imageProviderSelect = document.getElementById('image-provider-select'); // 文生图生成引擎选择器
+const imageProviderHelp = document.getElementById('image-provider-help'); // 文生图生成引擎提示信息
 
 // 全局变量 - 存储应用状态和数据
 let apiKey = localStorage.getItem('glm-api-key') || ''; // 从本地存储获取API密钥
@@ -91,6 +103,56 @@ let isShowingExpanded = false; // 当前是否显示扩写后的文本
 let isDarkMode = localStorage.getItem('dark-mode') === 'true'; // 深色模式状态
 let selectedPrompts = new Set(); // 存储已选中的提示词
 let uploadedImageData = null; // 存储上传的图片数据
+let jimengSecretId = localStorage.getItem('jimeng-secret-id') || ''; // 即梦AI SecretId
+let jimengSecretKey = localStorage.getItem('jimeng-secret-key') || ''; // 即梦AI SecretKey
+let jimengRegion = localStorage.getItem('jimeng-region') || 'ap-guangzhou'; // 即梦AI 区域
+let imageProvider = localStorage.getItem('image-provider') || 'cogview'; // 当前选择的文生图生成引擎
+
+function updateJimengCredentialInputs() {
+    const regionValue = jimengRegion || '';
+    [jimengSecretIdInput, jimengSecretIdTopInput].forEach(input => {
+        if (input) {
+            input.value = jimengSecretId;
+        }
+    });
+    [jimengSecretKeyInput, jimengSecretKeyTopInput].forEach(input => {
+        if (input) {
+            input.value = jimengSecretKey;
+        }
+    });
+    [jimengRegionInput, jimengRegionTopInput].forEach(input => {
+        if (input) {
+            input.value = regionValue;
+        }
+    });
+}
+
+function persistJimengCredentials(newSecretId, newSecretKey, newRegion) {
+    jimengSecretId = newSecretId;
+    jimengSecretKey = newSecretKey;
+    jimengRegion = newRegion || 'ap-guangzhou';
+
+    localStorage.setItem('jimeng-secret-id', jimengSecretId);
+    localStorage.setItem('jimeng-secret-key', jimengSecretKey);
+    localStorage.setItem('jimeng-region', jimengRegion);
+
+    updateJimengCredentialInputs();
+}
+
+function handleJimengCredentialSave(secretIdInput, secretKeyInput, regionInput) {
+    const newSecretId = secretIdInput ? secretIdInput.value.trim() : '';
+    const newSecretKey = secretKeyInput ? secretKeyInput.value.trim() : '';
+    const newRegion = regionInput ? regionInput.value.trim() : '';
+
+    if (!newSecretId || !newSecretKey) {
+        showNotification('请填写完整的即梦 SecretId 和 SecretKey', 'error');
+        return;
+    }
+
+    persistJimengCredentials(newSecretId, newSecretKey, newRegion);
+
+    showNotification('即梦API配置已保存', 'success');
+}
 
 const historyViewState = {
     items: [],
@@ -125,6 +187,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (geminiApiKey) {
         geminiApiKeyInput.value = geminiApiKey;
     }
+
+    updateJimengCredentialInputs();
+
+    if (imageProviderSelect) {
+        imageProviderSelect.value = imageProvider;
+    }
+
+    updateImageProviderHelp();
 
     // 初始化UI组件和数据
     updateCharCount(); // 更新字符计数
@@ -320,6 +390,27 @@ saveGeminiApiKeyBtn.addEventListener('click', () => {
         showNotification('请输入有效的Gemini API密钥', 'error'); // 显示错误通知
     }
 });
+
+// 保存即梦API凭证
+if (saveJimengCredentialsBtn) {
+    saveJimengCredentialsBtn.addEventListener('click', () => {
+        handleJimengCredentialSave(jimengSecretIdInput, jimengSecretKeyInput, jimengRegionInput);
+    });
+}
+
+if (saveJimengCredentialsTopBtn) {
+    saveJimengCredentialsTopBtn.addEventListener('click', () => {
+        handleJimengCredentialSave(jimengSecretIdTopInput, jimengSecretKeyTopInput, jimengRegionTopInput);
+    });
+}
+
+if (imageProviderSelect) {
+    imageProviderSelect.addEventListener('change', () => {
+        imageProvider = imageProviderSelect.value;
+        localStorage.setItem('image-provider', imageProvider);
+        updateImageProviderHelp();
+    });
+}
 
 // 交换语言功能
 swapLanguagesBtn.addEventListener('click', () => {
@@ -3282,6 +3373,302 @@ function updateNegativePromptCharCount() {
     }
 }
 
+function getImageProviderDisplayName(provider) {
+    switch (provider) {
+        case 'jimeng':
+            return '即梦AI';
+        case 'cogview':
+        default:
+            return '智谱AI · CogView-4';
+    }
+}
+
+function updateImageProviderHelp() {
+    if (!imageProviderHelp) return;
+    const currentProvider = imageProviderSelect ? imageProviderSelect.value : (imageProvider || 'cogview');
+    if (currentProvider === 'jimeng') {
+        imageProviderHelp.textContent = '使用即梦AI接口生成图像，请在页面顶部填写 SecretId、SecretKey 和区域后保存。';
+    } else {
+        imageProviderHelp.textContent = '使用智谱AI CogView-4 模型生成图像，需要在“API密钥设置”中配置智谱AI API密钥。';
+    }
+}
+
+async function fetchWithRetry(url, options, maxRetries = 2, retryDelay = 2000) {
+    let lastError;
+
+    for (let i = 0; i <= maxRetries; i++) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000);
+            const response = await fetch(url, {
+                ...options,
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (response.status === 500 && i < maxRetries) {
+                console.warn(`遇到500错误，第${i + 1}次重试...`);
+                await new Promise(resolve => setTimeout(resolve, retryDelay * (i + 1)));
+                continue;
+            }
+
+            return response;
+        } catch (error) {
+            lastError = error;
+            console.error(`第${i + 1}次请求失败:`, error);
+            if (i < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, retryDelay * (i + 1)));
+            }
+        }
+    }
+
+    throw lastError;
+}
+
+function getCrypto() {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+    return window.crypto || window.msCrypto || null;
+}
+
+function bufferToHex(buffer) {
+    const view = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+    return Array.from(view).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function sha256Hex(message) {
+    const cryptoObj = getCrypto();
+    if (!cryptoObj || !cryptoObj.subtle) {
+        throw new Error('当前浏览器不支持所需的加密算法，无法调用即梦接口');
+    }
+    const encoder = new TextEncoder();
+    const data = encoder.encode(message);
+    const hashBuffer = await cryptoObj.subtle.digest('SHA-256', data);
+    return bufferToHex(hashBuffer);
+}
+
+async function hmacSha256(key, message) {
+    const cryptoObj = getCrypto();
+    if (!cryptoObj || !cryptoObj.subtle) {
+        throw new Error('当前浏览器不支持所需的加密算法，无法调用即梦接口');
+    }
+    const encoder = new TextEncoder();
+    let keyData;
+    if (key instanceof Uint8Array) {
+        keyData = key;
+    } else if (key instanceof ArrayBuffer) {
+        keyData = new Uint8Array(key);
+    } else if (typeof key === 'string') {
+        keyData = encoder.encode(key);
+    } else {
+        keyData = new Uint8Array(key);
+    }
+    const cryptoKey = await cryptoObj.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const signature = await cryptoObj.subtle.sign('HMAC', cryptoKey, encoder.encode(message));
+    return new Uint8Array(signature);
+}
+
+async function generateTc3Authorization({ secretId, secretKey, payloadString, service, host, timestamp }) {
+    const algorithm = 'TC3-HMAC-SHA256';
+    const httpMethod = 'POST';
+    const canonicalUri = '/';
+    const canonicalQueryString = '';
+    const canonicalHeaders = `content-type:application/json\nhost:${host}\n`;
+    const signedHeaders = 'content-type;host';
+    const hashedPayload = await sha256Hex(payloadString);
+    const canonicalRequest = [
+        httpMethod,
+        canonicalUri,
+        canonicalQueryString,
+        canonicalHeaders,
+        signedHeaders,
+        hashedPayload
+    ].join('\n');
+
+    const hashedCanonicalRequest = await sha256Hex(canonicalRequest);
+    const date = new Date(timestamp * 1000).toISOString().slice(0, 10).replace(/-/g, '');
+    const credentialScope = `${date}/${service}/tc3_request`;
+    const stringToSign = `${algorithm}\n${timestamp}\n${credentialScope}\n${hashedCanonicalRequest}`;
+
+    const kDate = await hmacSha256(`TC3${secretKey}`, date);
+    const kService = await hmacSha256(kDate, service);
+    const kSigning = await hmacSha256(kService, 'tc3_request');
+    const signatureArray = await hmacSha256(kSigning, stringToSign);
+    const signature = bufferToHex(signatureArray);
+
+    const authorization = `${algorithm} Credential=${secretId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+
+    return { authorization };
+}
+
+async function generateImageWithCogview({ prompt, negativePrompt, resolution }) {
+    const response = await fetchWithRetry('https://open.bigmodel.cn/api/paas/v4/images/generations', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: 'cogview-4',
+            prompt,
+            negative_prompt: negativePrompt || '',
+            n: 1,
+            size: resolution,
+            quality: 'standard',
+            style: 'vivid'
+        })
+    });
+
+    const data = await response.json();
+    console.log('图像生成API成功响应:', data);
+
+    if (!response.ok) {
+        console.error('API错误响应:', data);
+        let errorMessage = '';
+        if (response.status === 401) {
+            errorMessage = 'API密钥无效，请检查您的智谱AI API密钥设置';
+        } else if (response.status === 429) {
+            errorMessage = '请求过于频繁，请稍后再试';
+        } else if (response.status === 500) {
+            errorMessage = '服务器内部错误，已尝试重试但仍然失败，请稍后再试或联系客服';
+        } else if (response.status === 503) {
+            errorMessage = '服务暂时不可用，请稍后再试';
+        } else {
+            errorMessage = data.error?.message || `请求失败，状态码: ${response.status}`;
+        }
+
+        throw new Error(errorMessage);
+    }
+
+    if (data.data && data.data.length > 0 && data.data[0].url) {
+        return {
+            imageUrl: data.data[0].url,
+            providerName: getImageProviderDisplayName('cogview')
+        };
+    }
+
+    throw new Error('图像生成失败，服务器未返回有效数据，请重试');
+}
+
+async function generateImageWithJimeng({ prompt, negativePrompt, resolution }) {
+    const host = 'hunyuan.tencentcloudapi.com';
+    const service = 'hunyuan';
+    const action = 'TextToImage';
+    const version = '2023-09-01';
+    const timestamp = Math.floor(Date.now() / 1000);
+    const jimengResolution = resolution.replace(/[x×]/i, '*');
+
+    const payload = {
+        Prompt: prompt,
+        Resolution: jimengResolution,
+        RspImgType: 'base64'
+    };
+
+    if (negativePrompt) {
+        payload.NegativePrompt = negativePrompt;
+    }
+
+    const payloadString = JSON.stringify(payload);
+    const { authorization } = await generateTc3Authorization({
+        secretId: jimengSecretId,
+        secretKey: jimengSecretKey,
+        payloadString,
+        service,
+        host,
+        timestamp
+    });
+
+    const headers = {
+        'Content-Type': 'application/json',
+        'X-TC-Action': action,
+        'X-TC-Version': version,
+        'X-TC-Timestamp': timestamp.toString(),
+        'Authorization': authorization
+    };
+
+    if (jimengRegion) {
+        headers['X-TC-Region'] = jimengRegion;
+    }
+
+    console.log('调用即梦接口参数:', payload);
+
+    const response = await fetch(`https://${host}`, {
+        method: 'POST',
+        headers,
+        body: payloadString
+    });
+
+    const data = await response.json();
+    console.log('即梦接口响应:', data);
+
+    if (!response.ok) {
+        const message = data?.Response?.Error?.Message || data?.error?.message || `请求失败，状态码: ${response.status}`;
+        throw new Error(message);
+    }
+
+    if (data?.Response?.Error) {
+        throw new Error(`${data.Response.Error.Message || '调用即梦接口失败'} (代码: ${data.Response.Error.Code || 'Unknown'})`);
+    }
+
+    const responseData = data?.Response || {};
+    let imageUrl = '';
+
+    if (responseData.ResultImageUrl) {
+        imageUrl = responseData.ResultImageUrl;
+    } else if (responseData.ResultImage) {
+        imageUrl = `data:image/png;base64,${responseData.ResultImage}`;
+    } else if (Array.isArray(responseData.ResultImageList) && responseData.ResultImageList.length > 0) {
+        const firstItem = responseData.ResultImageList[0];
+        if (firstItem?.ImageUrl) {
+            imageUrl = firstItem.ImageUrl;
+        } else if (firstItem?.Image) {
+            imageUrl = `data:image/png;base64,${firstItem.Image}`;
+        }
+    } else if (Array.isArray(responseData.Images) && responseData.Images.length > 0) {
+        const firstItem = responseData.Images[0];
+        if (firstItem?.Url) {
+            imageUrl = firstItem.Url;
+        } else if (typeof firstItem === 'string') {
+            imageUrl = firstItem.startsWith('http') ? firstItem : `data:image/png;base64,${firstItem}`;
+        }
+    }
+
+    if (!imageUrl) {
+        throw new Error('即梦接口未返回有效的图像数据，请稍后重试');
+    }
+
+    return {
+        imageUrl,
+        providerName: getImageProviderDisplayName('jimeng'),
+        requestId: responseData.RequestId || ''
+    };
+}
+
+function loadGeneratedImage(imageUrl) {
+    return new Promise((resolve, reject) => {
+        const img = document.createElement('img');
+        img.src = imageUrl;
+        img.alt = '生成的图像';
+
+        const timeoutId = setTimeout(() => {
+            img.onload = null;
+            img.onerror = null;
+            reject(new Error('图像加载超时，请检查网络连接'));
+        }, 30000);
+
+        img.onload = () => {
+            clearTimeout(timeoutId);
+            resolve(img);
+        };
+
+        img.onerror = () => {
+            clearTimeout(timeoutId);
+            reject(new Error('图像加载失败，请检查网络连接或稍后重试'));
+        };
+    });
+}
+
 // 生成图像
 async function generateImage() {
     if (!positivePromptTextarea || !generateImageBtn || !generatedImageDisplay || !imageGenerationInfo) {
@@ -3292,214 +3679,102 @@ async function generateImage() {
     const positivePrompt = positivePromptTextarea.value.trim();
     const negativePrompt = negativePromptTextarea ? negativePromptTextarea.value.trim() : '';
     const imageResolution = imageResolutionSelect ? imageResolutionSelect.value : '1024x1024';
+    const currentProvider = imageProviderSelect ? imageProviderSelect.value : (imageProvider || 'cogview');
 
-    // 检查正向提示词是否为空
     if (!positivePrompt) {
         showNotification('请输入正向提示词', 'error');
         return;
     }
 
-    // 检查API密钥
-    if (!apiKey) {
-        showNotification('请先设置API密钥', 'error');
+    if (currentProvider === 'cogview' && !apiKey) {
+        showNotification('请先设置智谱AI API密钥', 'error');
         return;
     }
 
-    // 处理反向提示词，确保不包含中文字符
+    if (currentProvider === 'jimeng' && (!jimengSecretId || !jimengSecretKey)) {
+        showNotification('请先设置即梦 SecretId 和 SecretKey', 'error');
+        return;
+    }
+
     let processedNegativePrompt = negativePrompt;
     if (processedNegativePrompt) {
         const chineseRegex = /[\u4e00-\u9fa5]/g;
         if (chineseRegex.test(processedNegativePrompt)) {
-            // 如果有中文字符，移除它们
             processedNegativePrompt = processedNegativePrompt.replace(chineseRegex, '').trim();
-            
-            // 移除可能产生的多余逗号和空格
             processedNegativePrompt = processedNegativePrompt.replace(/,\s*,/g, ',').replace(/^,\s*/, '').replace(/,\s*$/, '');
-            
-            // 如果结果为空，提供默认的反向提示词
             if (!processedNegativePrompt) {
                 processedNegativePrompt = "blurry, low quality, distorted, deformed, ugly, bad anatomy, disfigured, poorly drawn face, mutation, mutated, extra limb, ugly, poorly drawn hands, missing limb, floating limbs, disconnected limbs, malformed hands, blurry, ((((ugly)))), (((duplicate))), ((morbid)), ((mutilated)), out of frame, extra fingers, mutated hands, ((poorly drawn hands)), ((poorly drawn face)), (((mutation))), (((deformed))), ((ugly)), blurry, ((bad anatomy)), (((bad proportions))), ((extra limbs)), cloned face, (((disfigured))), out of frame, ugly, extra limbs, (bad anatomy), gross proportions, (malformed limbs), ((missing arms)), ((missing legs)), (((extra arms))), (((extra legs))), mutated hands, (fused fingers), (too many fingers), (((long neck))), Photoshop, video game, ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, out of frame, mutation, mutated, extra limbs, extra legs, extra arms, disfigured, deformed, cross-eyed, blurry, bad anatomy, bad proportions, malformed limbs, cloned face, gross proportions, (malformed limbs), (missing arms), (missing legs), (extra arms), (extra legs), mutated hands, (fused fingers), (too many fingers), (long neck)";
             }
-            
-            // 通知用户反向提示词已被修改
             showNotification('反向提示词中的中文字符已被移除', 'info');
         }
     }
 
-    // 显示加载状态
     generateImageBtn.disabled = true;
     generateImageBtn.innerHTML = '<span class="loading-spinner"></span> 生成中...';
-    
-    // 清除之前的图像和信息
+
     generatedImageDisplay.innerHTML = '';
     imageGenerationInfo.innerHTML = '';
     if (downloadImageBtn) downloadImageBtn.style.display = 'none';
     if (regenerateImageBtn) regenerateImageBtn.style.display = 'none';
 
-    // 重试函数
-    const fetchWithRetry = async (url, options, maxRetries = 2, retryDelay = 2000) => {
-        let lastError;
-        
-        for (let i = 0; i <= maxRetries; i++) {
-            try {
-                // 创建一个AbortController用于请求超时
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 60000); // 60秒超时
-                
-                // 添加signal到请求选项
-                const fetchOptions = {
-                    ...options,
-                    signal: controller.signal
-                };
-                
-                const response = await fetch(url, fetchOptions);
-                
-                // 清除超时定时器
-                clearTimeout(timeoutId);
-                
-                // 如果是500错误，并且还有重试次数，则等待后重试
-                if (response.status === 500 && i < maxRetries) {
-                    console.log(`遇到500错误，第${i + 1}次重试...`);
-                    await new Promise(resolve => setTimeout(resolve, retryDelay * (i + 1))); // 递增延迟
-                    continue;
-                }
-                
-                return response;
-            } catch (error) {
-                lastError = error;
-                console.error(`第${i + 1}次请求失败:`, error);
-                
-                // 如果不是最后一次尝试，等待后重试
-                if (i < maxRetries) {
-                    await new Promise(resolve => setTimeout(resolve, retryDelay * (i + 1))); // 递增延迟
-                }
-            }
-        }
-        
-        throw lastError;
-    };
-
     try {
-        // 准备生成图像的提示词
-        const systemPrompt = `你是一个专业的图像生成助手。根据用户提供的正向提示词和反向提示词，生成高质量的图像描述。请确保生成的图像符合用户的期望，并避免反向提示词中提到的内容。
-
-正向提示词：${positivePrompt}
-反向提示词：${processedNegativePrompt || '无'}`;
-
-        // 调用API生成图像（带重试机制）
-        const response = await fetchWithRetry('https://open.bigmodel.cn/api/paas/v4/images/generations', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-                model: 'cogview-4', // 使用GLM文生图模型
-                prompt: positivePrompt,
-                negative_prompt: processedNegativePrompt || '',
-                n: 1, // 生成1张图片
-                size: imageResolution, // 用户选择的图片尺寸
-                quality: 'standard', // 图片质量
-                style: 'vivid' // 图片风格
-            })
+        const generator = currentProvider === 'jimeng' ? generateImageWithJimeng : generateImageWithCogview;
+        const result = await generator({
+            prompt: positivePrompt,
+            negativePrompt: processedNegativePrompt,
+            resolution: imageResolution
         });
 
-        console.log("图像生成响应状态:", response.status);
+        const img = await loadGeneratedImage(result.imageUrl);
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error("API错误响应:", errorData);
-            
-            // 根据错误状态码提供更具体的错误信息
-            let errorMessage = '';
-            if (response.status === 401) {
-                errorMessage = 'API密钥无效，请检查您的API密钥设置';
-            } else if (response.status === 429) {
-                errorMessage = '请求过于频繁，请稍后再试';
-            } else if (response.status === 500) {
-                errorMessage = '服务器内部错误，已尝试重试但仍然失败，请稍后再试或联系客服';
-            } else if (response.status === 503) {
-                errorMessage = '服务暂时不可用，请稍后再试';
-            } else {
-                errorMessage = errorData.error?.message || `请求失败，状态码: ${response.status}`;
-            }
-            
-            throw new Error(errorMessage);
+        generatedImageDisplay.innerHTML = '';
+        generatedImageDisplay.appendChild(img);
+
+        const generatedImageContainer = document.getElementById('generated-image-container');
+        if (generatedImageContainer) {
+            generatedImageContainer.style.display = 'block';
         }
 
-        const data = await response.json();
-        console.log("图像生成API成功响应:", data);
+        if (downloadImageBtn) downloadImageBtn.style.display = 'flex';
+        if (regenerateImageBtn) regenerateImageBtn.style.display = 'flex';
 
-        if (data.data && data.data.length > 0) {
-            // 获取生成的图像URL
-            const imageUrl = data.data[0].url;
-            
-            // 创建图像元素
-            const img = document.createElement('img');
-            img.src = imageUrl;
-            img.alt = '生成的图像';
-            
-            // 设置图像加载超时
-            const imgLoadTimeout = setTimeout(() => {
-                img.onerror = null;
-                throw new Error('图像加载超时，请检查网络连接');
-            }, 30000); // 30秒图像加载超时
-            
-            img.onload = () => {
-                clearTimeout(imgLoadTimeout);
-                generatedImageDisplay.innerHTML = '';
-                generatedImageDisplay.appendChild(img);
-                
-                // 显示生成的图像容器
-                const generatedImageContainer = document.getElementById('generated-image-container');
-                if (generatedImageContainer) {
-                    generatedImageContainer.style.display = 'block';
-                }
-                
-                // 显示操作按钮
-                if (downloadImageBtn) downloadImageBtn.style.display = 'flex';
-                if (regenerateImageBtn) regenerateImageBtn.style.display = 'flex';
-                
-                // 显示生成信息
-                imageGenerationInfo.innerHTML = `
-                    <p>正向提示词：${positivePrompt}</p>
-                    ${processedNegativePrompt ? `<p>反向提示词：${processedNegativePrompt}</p>` : ''}
-                    <p>尺寸：${imageResolution}</p>
-                    <p style="color: #1a73e8; font-size: 12px; margin-top: 8px;">💡 提示：点击图像可以放大查看</p>
-                `;
-                
-                // 存储生成的图像数据
-                generatedImageData = imageUrl;
-                lastPositivePrompt = positivePrompt;
-                lastNegativePrompt = processedNegativePrompt;
-                lastImageResolution = imageResolution;
-                
-                showNotification('图像生成成功', 'success');
-            };
-            
-            img.onerror = () => {
-                clearTimeout(imgLoadTimeout);
-                throw new Error('图像加载失败，请检查网络连接或稍后重试');
-            };
-        } else {
-            throw new Error('图像生成失败，服务器未返回有效数据，请重试');
+        const infoParts = [
+            `<p>生成引擎：${result.providerName || getImageProviderDisplayName(currentProvider)}</p>`,
+            `<p>正向提示词：${positivePrompt}</p>`
+        ];
+
+        if (processedNegativePrompt) {
+            infoParts.push(`<p>反向提示词：${processedNegativePrompt}</p>`);
         }
+
+        infoParts.push(`<p>尺寸：${imageResolution}</p>`);
+
+        if (result.requestId) {
+            infoParts.push(`<p>请求ID：${result.requestId}</p>`);
+        }
+
+        infoParts.push('<p style="color: #1a73e8; font-size: 12px; margin-top: 8px;">💡 提示：点击图像可以放大查看</p>');
+
+        imageGenerationInfo.innerHTML = infoParts.join('');
+
+        generatedImageData = result.imageUrl;
+        lastPositivePrompt = positivePrompt;
+        lastNegativePrompt = processedNegativePrompt;
+        lastImageResolution = imageResolution;
+
+        showNotification('图像生成成功', 'success');
     } catch (error) {
         console.error('生成图像时出错:', error);
-        
-        // 提供更具体的错误信息
         let errorMessage = '生成图像失败: ';
         if (error.name === 'AbortError') {
             errorMessage += '请求超时，请检查网络连接或稍后重试';
-        } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+        } else if (error.message && (error.message.includes('NetworkError') || error.message.includes('Failed to fetch'))) {
             errorMessage += '网络连接错误，请检查您的网络连接并重试';
         } else {
-            errorMessage += error.message;
+            errorMessage += error.message || '发生未知错误';
         }
-        
         showNotification(errorMessage, 'error');
     } finally {
-        // 恢复按钮状态
         generateImageBtn.disabled = false;
         generateImageBtn.innerHTML = `
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -3511,7 +3786,6 @@ async function generateImage() {
         `;
     }
 }
-
 // 下载图像
 function downloadImage() {
     if (!generatedImageData) {
