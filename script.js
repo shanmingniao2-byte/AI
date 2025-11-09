@@ -3469,13 +3469,42 @@ async function hmacSha256(key, message) {
     return new Uint8Array(signature);
 }
 
-async function generateTc3Authorization({ secretId, secretKey, payloadString, service, host, timestamp }) {
+function buildCanonicalQueryString(params) {
+    return Object.keys(params)
+        .sort((a, b) => a.localeCompare(b))
+        .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
+        .join('&');
+}
+
+async function generateTc3Authorization({
+    secretId,
+    secretKey,
+    payloadString,
+    service,
+    host,
+    timestamp,
+    canonicalQueryString = '',
+    headers = {}
+}) {
     const algorithm = 'TC3-HMAC-SHA256';
     const httpMethod = 'POST';
     const canonicalUri = '/';
-    const canonicalQueryString = '';
-    const canonicalHeaders = `content-type:application/json\nhost:${host}\n`;
-    const signedHeaders = 'content-type;host';
+    const lowercaseHeaders = Object.entries(headers).reduce((acc, [key, value]) => {
+        if (key && typeof value !== 'undefined' && value !== null) {
+            acc[key.toLowerCase()] = String(value).trim();
+        }
+        return acc;
+    }, {});
+    const canonicalHeadersMap = {
+        'content-type': 'application/json',
+        host,
+        ...lowercaseHeaders
+    };
+    const sortedHeaderKeys = Object.keys(canonicalHeadersMap).sort((a, b) => a.localeCompare(b));
+    const canonicalHeaders = sortedHeaderKeys
+        .map(key => `${key}:${canonicalHeadersMap[key]}`)
+        .join('\n') + '\n';
+    const signedHeaders = sortedHeaderKeys.join(';');
     const hashedPayload = await sha256Hex(payloadString);
     const canonicalRequest = [
         httpMethod,
@@ -3558,6 +3587,17 @@ async function generateImageWithJimeng({ prompt, negativePrompt, resolution }) {
     const version = '2023-09-01';
     const timestamp = Math.floor(Date.now() / 1000);
     const jimengResolution = resolution.replace(/[x×]/i, '*');
+    const queryParams = {
+        Action: action,
+        Version: version
+    };
+
+    if (jimengRegion) {
+        queryParams.Region = jimengRegion;
+    }
+
+    const canonicalQueryString = buildCanonicalQueryString(queryParams);
+    const requestUrl = `https://${host}/?${canonicalQueryString}`;
 
     const payload = {
         Prompt: prompt,
@@ -3576,24 +3616,18 @@ async function generateImageWithJimeng({ prompt, negativePrompt, resolution }) {
         payloadString,
         service,
         host,
-        timestamp
+        timestamp,
+        canonicalQueryString
     });
 
     const headers = {
         'Content-Type': 'application/json',
-        'X-TC-Action': action,
-        'X-TC-Version': version,
-        'X-TC-Timestamp': timestamp.toString(),
         'Authorization': authorization
     };
 
-    if (jimengRegion) {
-        headers['X-TC-Region'] = jimengRegion;
-    }
-
     console.log('调用即梦接口参数:', payload);
 
-    const response = await fetch(`https://${host}`, {
+    const response = await fetch(requestUrl, {
         method: 'POST',
         headers,
         body: payloadString
