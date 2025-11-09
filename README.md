@@ -6,7 +6,7 @@
 
 - 🌐 中英互译，支持自动检测语言
 - 🔑 支持多种GLM模型（GLM-4-Flash、GLM-4.5）
-- 🎨 文生图功能，支持智谱AI CogView-4 与即梦AI（腾讯混元·即梦）模型生成高质量图像
+- 🎨 文生图功能，支持智谱AI CogView-4 与即梦AI（字节跳动 SeeDream 4.0）模型生成高质量图像
 - 📱 响应式设计，支持移动设备
 - 🔄 一键交换源语言和目标语言
 - 📋 一键复制翻译结果
@@ -27,7 +27,7 @@
 
 1. 在网页顶部的“智谱AI API密钥”输入框中输入您的智谱AI密钥并点击“保存密钥”
 2. 如需使用提示词扩写等功能，可在“Gemini API密钥”输入框中输入Google Gemini密钥
-3. 在网页顶部的“即梦 API 凭证”区域填写腾讯云提供的 SecretId、SecretKey 后点击“保存即梦配置”
+3. 在网页顶部的“即梦 API 密钥”区域填写字节跳动即梦提供的 API 密钥后点击“保存即梦密钥”
 4. 所有密钥信息将保存在浏览器本地存储中，下次访问时无需重新输入
 
 ### 3. 使用翻译功能
@@ -60,7 +60,7 @@
 本应用使用以下技术：
 
 - 前端：HTML、CSS、JavaScript
-- API：智谱AI GLM模型API、即梦AI（腾讯云混元·即梦）API、Google Gemini API
+- API：智谱AI GLM模型API、即梦AI（字节跳动 SeeDream 4.0）API、Google Gemini API
 - 数据存储：浏览器本地存储（localStorage）
 
 ## 注意事项

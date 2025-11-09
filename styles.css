@@ -1058,17 +1058,6 @@ body.dark-mode .api-key-toggle-btn svg {
     font-size: 14px;
 }
 
-.jimeng-credentials-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-.jimeng-credentials-grid input {
-    margin-bottom: 0;
-}
-
 .jimeng-credential-hint {
     font-size: 12px;
     color: #666;
