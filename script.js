@@ -3459,6 +3459,29 @@ async function generateImageWithCogview({ prompt, negativePrompt, resolution }) 
 async function generateImageWithJimeng({ prompt, negativePrompt, resolution }) {
     const endpoint = 'https://ark-api.open.doubao.com/v1/images/generations';
     const jimengResolution = resolution.replace(/[x×]/i, '*');
+
+    const payload = {
+        model: 'see-dream',
+        input: {
+            action: 'TEXT_TO_IMAGE',
+            prompt,
+            parameters: {
+                size: jimengResolution,
+                image_size: jimengResolution,
+                resolution: jimengResolution,
+                image_count: 1,
+                response_format: 'url'
+            }
+        }
+    };
+
+    if (negativePrompt) {
+        payload.input.negative_prompt = negativePrompt;
+        payload.input.parameters.negative_prompt = negativePrompt;
+    }
+
+    console.log('调用即梦（字节跳动）接口参数:', payload);
+
     const queryParams = {
         Action: action,
         Version: version
