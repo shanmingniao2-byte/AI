@@ -1930,13 +1930,19 @@
             <div class="text-to-image-section">
                 <div class="prompt-inputs">
                     <div class="positive-prompt-container">
-                        <div class="prompt-header">
-                            <h3>正向提示词</h3>
-                            <div class="prompt-actions">
-                                <div class="resolution-selector-inline">
-                                    <select id="image-resolution-select" class="resolution-select-inline">
-                                        <option value="1024x1024" selected>1024 × 1024</option>
-                                        <option value="1024x768">1024 × 768</option>
+                            <div class="prompt-header">
+                                <h3>正向提示词</h3>
+                                <div class="prompt-actions">
+                                    <div class="image-provider-selector-inline">
+                                        <select id="image-provider-select" class="image-provider-select">
+                                            <option value="cogview">智谱AI · CogView-4</option>
+                                            <option value="jimeng">腾讯混元 · 即梦</option>
+                                        </select>
+                                    </div>
+                                    <div class="resolution-selector-inline">
+                                        <select id="image-resolution-select" class="resolution-select-inline">
+                                            <option value="1024x1024" selected>1024 × 1024</option>
+                                            <option value="1024x768">1024 × 768</option>
                                         <option value="768x1024">768 × 1024</option>
                                         <option value="896x1152">896 × 1152</option>
                                         <option value="1152x896">1152 × 896</option>
@@ -1989,7 +1995,11 @@
                         生成图像
                     </button>
                 </div>
-                
+
+                <p class="image-provider-help" id="image-provider-help">
+                    使用智谱AI CogView-4 模型生成图像，需要在“API密钥设置”中配置智谱AI API密钥。
+                </p>
+
                 <div class="generated-image-container" id="generated-image-container" style="display: none;">
                     <div class="generated-image-header">
                         <h3>生成的图像</h3>
@@ -2040,6 +2050,16 @@
                         <input type="password" id="gemini-api-key-input" placeholder="请输入您的Gemini API密钥">
                         <button id="save-gemini-api-key-btn" class="save-api-key-btn">保存密钥</button>
                     </div>
+                    <div class="api-key-form">
+                        <label>即梦 API 凭证：</label>
+                        <div class="jimeng-credentials-grid">
+                            <input type="password" id="jimeng-secret-id-input" placeholder="SecretId">
+                            <input type="password" id="jimeng-secret-key-input" placeholder="SecretKey">
+                            <input type="text" id="jimeng-region-input" placeholder="区域（可选，默认 ap-guangzhou）">
+                        </div>
+                        <button id="save-jimeng-credentials-btn" class="save-api-key-btn">保存即梦配置</button>
+                        <p class="jimeng-credential-hint">即梦接口基于腾讯混元·即梦文本生图服务，需要腾讯云控制台获取的 SecretId、SecretKey 以及区域信息。</p>
+                    </div>
                     <div class="api-key-info">
                         <p>如何获取智谱AI API密钥：</p>
                         <ol>
@@ -2054,6 +2074,13 @@
                             <li>注册并登录您的Google账户</li>
                             <li>在控制台中创建API密钥</li>
                             <li>复制密钥并粘贴到上方输入框</li>
+                        </ol>
+                        <p>如何获取即梦 API 凭证：</p>
+                        <ol>
+                            <li>访问 <a href="https://cloud.tencent.com/product/hunyuan" target="_blank">腾讯云混元·即梦</a></li>
+                            <li>开通混元·即梦服务并在访问管理中创建密钥对（SecretId、SecretKey）</li>
+                            <li>在控制台查看可用区域信息，如 <code>ap-guangzhou</code>、<code>ap-shanghai</code> 等</li>
+                            <li>将凭证填写在上方输入框，并点击“保存即梦配置”</li>
                         </ol>
                     </div>
                 </div>

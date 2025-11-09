@@ -546,6 +546,38 @@ body.dark-mode .prompt-output-header h3 {
     gap: 8px;
 }
 
+.image-provider-selector-inline {
+    margin-right: 8px;
+}
+
+.image-provider-select {
+    padding: 4px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 12px;
+    background-color: #fff;
+    color: #333;
+    min-width: 160px;
+    transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+}
+
+body.dark-mode .image-provider-select {
+    background-color: #2d2d2d;
+    color: #e0e0e0;
+    border-color: #555;
+}
+
+.image-provider-select:focus {
+    outline: none;
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+body.dark-mode .image-provider-select:focus {
+    border-color: #bb86fc;
+    box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.2);
+}
+
 .resolution-selector-inline {
     margin-right: 8px;
 }
@@ -934,6 +966,28 @@ body.dark-mode .api-key-toggle-btn svg {
     border-radius: 4px;
     margin-bottom: 15px;
     font-size: 14px;
+}
+
+.jimeng-credentials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.jimeng-credentials-grid input {
+    margin-bottom: 0;
+}
+
+.jimeng-credential-hint {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.6;
+    margin-top: 8px;
+}
+
+body.dark-mode .jimeng-credential-hint {
+    color: #aaa;
 }
 
 .save-api-key-btn {
@@ -2835,6 +2889,17 @@ body.dark-mode .generate-image-btn:disabled {
 .generate-image-btn svg {
     width: 20px;
     height: 20px;
+}
+
+.image-provider-help {
+    margin-top: 12px;
+    font-size: 12px;
+    color: #666;
+    line-height: 1.6;
+}
+
+body.dark-mode .image-provider-help {
+    color: #aaa;
 }
 
 .generated-image-container {
