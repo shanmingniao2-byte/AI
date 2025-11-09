@@ -1,0 +1,2111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>维弗智创- AI提示词智能优化绘图软件</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="mouse-stars.js" defer></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="theme-toggle">
+            <button id="theme-toggle-btn" class="theme-toggle-btn" title="切换主题">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sun-icon">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="moon-icon"
+                    style="display: none;">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+            </button>
+        </div>
+
+        <div class="api-key-toggle">
+            <button id="api-key-toggle-btn" class="api-key-toggle-btn" title="设置API密钥">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                        d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4">
+                    </path>
+                </svg>
+            </button>
+        </div>
+
+        <h1>维弗智创- AI提示词智能优化绘图软件</h1>
+
+        <div class="translation-container">
+            <div class="input-section">
+                <div class="language-selector">
+                    <div class="language-selector-left">
+                        <select id="source-language">
+                            <option value="auto">自动检测</option>
+                            <option value="zh">中文</option>
+                            <option value="en">英文</option>
+                            <option value="ja">日语</option>
+                            <option value="ko">韩语</option>
+                            <option value="fr">法语</option>
+                            <option value="de">德语</option>
+                            <option value="es">西班牙语</option>
+                            <option value="ru">俄语</option>
+                            <option value="pt">葡萄牙语</option>
+                            <option value="it">意大利语</option>
+                            <option value="ar">阿拉伯语</option>
+                        </select>
+                        <button id="swap-languages" class="swap-btn" title="交换输入以及输出的语言">⇄</button>
+                        <select id="target-language">
+                            <option value="zh">中文</option>
+                            <option value="en">英文</option>
+                            <option value="ja">日语</option>
+                            <option value="ko">韩语</option>
+                            <option value="fr">法语</option>
+                            <option value="de">德语</option>
+                            <option value="es">西班牙语</option>
+                            <option value="ru">俄语</option>
+                            <option value="pt">葡萄牙语</option>
+                            <option value="it">意大利语</option>
+                            <option value="ar">阿拉伯语</option>
+                        </select>
+                        <div class="model-selector">
+                            <label for="model-select">模型：</label>
+                            <select id="model-select">
+                                <option value="glm-4-flash">GLM-4-Flash</option>
+                                <option value="glm-4.5">GLM-4.5</option>
+                                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="clear-source-text" class="clear-text-btn" title="清除文本">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"></path>
+                            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="text-input">
+                    <textarea id="source-text" placeholder="请输入要翻译的文本..."></textarea>
+                    <div class="char-count">
+                        <span id="char-count">0</span>/5000
+                    </div>
+                    <div id="expand-toggle" class="expand-toggle" title="AI扩写提示词">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 7L12 12L22 7L12 2Z"></path>
+                            <path d="M2 17L12 22L22 17"></path>
+                            <path d="M2 12L12 17L22 12"></path>
+                        </svg>
+                        扩写
+                    </div>
+                    <div id="prompt-library-toggle" class="prompt-library-toggle" title="AI提示词库">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                        提示词库
+                    </div>
+                </div>
+
+                <!-- 反向提示词框 -->
+                <div class="negative-prompt-container">
+                    <div class="negative-prompt-header">
+                        <h3 class="negative-prompt-title">反向提示词</h3>
+                        <div class="negative-prompt-actions">
+                            <button id="generate-negative-prompt" class="generate-negative-prompt" title="生成反向提示词">
+                                生成
+                            </button>
+                            <button id="copy-negative-prompt" class="copy-negative-prompt" title="复制反向提示词">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                复制
+                            </button>
+                            <button id="clear-negative-prompt" class="clear-text-btn" title="清除文本">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M3 6h18"></path>
+                                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="negative-prompt-content">
+                        <textarea id="negative-prompt-text" class="negative-prompt-textarea"
+                            placeholder="点击生成按钮生成反向提示词，您也可以手动编辑..."></textarea>
+                    </div>
+                </div>
+
+                <button id="translate-btn" class="translate-btn" title="对文本框里面的内容进行翻译">翻译</button>
+            </div>
+
+            <div class="output-section">
+                <div class="output-actions">
+                    <button id="copy-translation" class="action-btn" title="复制翻译结果到剪切板">复制翻译</button>
+                    <button id="clear-translation" class="clear-text-btn" title="清除文本">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"></path>
+                            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="text-output">
+                    <textarea id="translation-output" placeholder="翻译结果显示在这里" readonly></textarea>
+                </div>
+                
+                <!-- 对照显示文本框 -->
+                <div class="comparison-section">
+                    <div class="comparison-header">
+                        <h3>对照原文</h3>
+                        <span class="comparison-hint">（选中上方翻译结果中的英文提示词，可在此实时查看左侧原中文内容）</span>
+                    </div>
+                    <textarea id="comparison-output" class="comparison-textarea" readonly aria-live="polite" aria-label="中英文对照显示" placeholder="选中上方翻译结果中的英文文本，这里将实时显示与左侧原文对应的中文..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- 翻译历史记录 -->
+		<div class="history-container collapsible-section">
+			<div class="collapsible-header">
+				<h2>翻译历史</h2>
+				<button class="toggle-btn" aria-label="折叠/展开">
+					<span class="toggle-icon">−</span>
+				</button>
+			</div>
+			<div class="collapsible-content">
+				<div class="section-header">
+					<div class="history-actions">
+						<!-- 搜索和清空按钮 -->
+					<div class="history-search">
+                        <input type="text" id="history-search" placeholder="搜索历史记录...">
+                        <button id="history-search-btn" title="搜索">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.35-4.35"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <button id="clear-history-btn" class="clear-history-btn" title="清空历史记录">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"></path>
+                            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                        </svg>
+                        清空历史
+                    </button>
+					</div>
+				</div>
+				<div class="history-list" id="history-list">
+					<!-- 历史项 -->
+					<div class="history-empty">暂无翻译历史记录</div>
+				</div>
+			</div>
+		</div>
+
+        <!-- 提示词库弹窗 -->
+        <div id="prompt-library-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>AI提示词库</h2>
+                    <span class="close-modal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="prompt-search-bar">
+                        <input type="text" id="prompt-library-search" class="search-input" placeholder="搜索提示词...">
+                    </div>
+                    <div id="prompt-search-empty" class="prompt-search-empty" style="display: none;">没有找到匹配的提示词</div>
+                    <div class="prompt-categories">
+                        <div class="category-tabs">
+                            <button class="category-tab active" data-category="art-style">艺术风格</button>
+                            <button class="category-tab" data-category="lighting">光照效果</button>
+                            <button class="category-tab" data-category="composition">构图</button>
+                            <button class="category-tab" data-category="color">色彩</button>
+                            <button class="category-tab" data-category="material">材质</button>
+                            <button class="category-tab" data-category="scene">场景</button>
+                            <button class="category-tab" data-category="emotion">情感</button>
+                            <button class="category-tab" data-category="photography">摄影风格</button>
+                            <button class="category-tab" data-category="artperiod">艺术时期</button>
+                            <button class="category-tab" data-category="culture">文化元素</button>
+                            <button class="category-tab" data-category="season">季节天气</button>
+                            <button class="category-tab" data-category="character">人物特征</button>
+                            <button class="category-tab" data-category="negative">负面提示词</button>
+                        </div>
+                        <div class="category-content">
+                            <div class="category-pane active" id="art-style">
+                                <h3>艺术风格</h3>
+                                <div class="prompt-list">
+                                    <div class="prompt-item" data-prompt="写实风格，高度细节，专业摄影">
+                                        <span class="zh">写实风格</span>
+                                        <span class="en">Realistic style</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="油画风格，笔触明显，艺术感">
+                                        <span class="zh">油画风格</span>
+                                        <span class="en">Oil painting style</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="水彩画风格，透明，轻盈">
+                                        <span class="zh">水彩画风格</span>
+                                        <span class="en">Watercolor style</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="素描风格，线条清晰，黑白对比">
+                                        <span class="zh">素描风格</span>
+                                        <span class="en">Sketch style</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="动漫风格，大眼睛，色彩鲜艳">
+                                        <span class="zh">动漫风格</span>
+                                        <span class="en">Anime style</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="像素艺术，8位风格，复古">
+                                        <span class="zh">像素艺术</span>
+                                        <span class="en">Pixel art</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="超现实主义，梦幻，抽象">
+                                        <span class="zh">超现实主义</span>
+                                        <span class="en">Surrealism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="极简主义，简洁，留白">
+                                        <span class="zh">极简主义</span>
+                                        <span class="en">Minimalism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="印象派，光与色彩，松散笔触">
+                                        <span class="zh">印象派</span>
+                                        <span class="en">Impressionism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="巴洛克风格，华丽，戏剧性">
+                                        <span class="zh">巴洛克风格</span>
+                                        <span class="en">Baroque style</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="立体主义，几何形状，多角度">
+                                        <span class="zh">立体主义</span>
+                                        <span class="en">Cubism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="浮世绘，日本传统，平面设计">
+                                        <span class="zh">浮世绘</span>
+                                        <span class="en">Ukiyo-e</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="抽象表现主义，情感，自由笔触">
+                                        <span class="zh">抽象表现主义</span>
+                                        <span class="en">Abstract expressionism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="点彩派，小点，光学混合">
+                                        <span class="zh">点彩派</span>
+                                        <span class="en">Pointillism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="装饰艺术，几何，奢华">
+                                        <span class="zh">装饰艺术</span>
+                                        <span class="en">Art Deco</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="新古典主义，秩序，理想化">
+                                        <span class="zh">新古典主义</span>
+                                        <span class="en">Neoclassicism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="浪漫主义，情感，自然">
+                                        <span class="zh">浪漫主义</span>
+                                        <span class="en">Romanticism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="未来主义，动态，科技感">
+                                        <span class="zh">未来主义</span>
+                                        <span class="en">Futurism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="达达主义，荒诞，反传统">
+                                        <span class="zh">达达主义</span>
+                                        <span class="en">Dadaism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="波普艺术，流行文化，鲜艳">
+                                        <span class="zh">波普艺术</span>
+                                        <span class="en">Pop Art</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="概念艺术，思想，实验性">
+                                        <span class="zh">概念艺术</span>
+                                        <span class="en">Conceptual art</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="街头艺术，涂鸦，城市文化">
+                                        <span class="zh">街头艺术</span>
+                                        <span class="en">Street art</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="赛博朋克，高科技，低生活">
+                                        <span class="zh">赛博朋克</span>
+                                        <span class="en">Cyberpunk</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="蒸汽朋克，维多利亚，机械">
+                                        <span class="zh">蒸汽朋克</span>
+                                        <span class="en">Steampunk</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="奇幻艺术，魔法，神秘">
+                                        <span class="zh">奇幻艺术</span>
+                                        <span class="en">Fantasy art</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="科幻艺术，未来，太空">
+                                        <span class="zh">科幻艺术</span>
+                                        <span class="en">Sci-fi art</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="category-pane" id="lighting">
+                                <h3>光照效果</h3>
+                                <div class="prompt-list">
+                                    <div class="prompt-item" data-prompt="自然光，柔和，温暖">
+                                        <span class="zh">自然光</span>
+                                        <span class="en">Natural light</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="戏剧性光照，高对比度，阴影">
+                                        <span class="zh">戏剧性光照</span>
+                                        <span class="en">Dramatic lighting</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="背光，轮廓光，剪影效果">
+                                        <span class="zh">背光</span>
+                                        <span class="en">Backlight</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="霓虹灯，鲜艳，未来感">
+                                        <span class="zh">霓虹灯</span>
+                                        <span class="en">Neon lights</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="黄金时段，日落，温暖色调">
+                                        <span class="zh">黄金时段</span>
+                                        <span class="en">Golden hour</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="体积光，光线穿透，尘埃">
+                                        <span class="zh">体积光</span>
+                                        <span class="en">Volumetric lighting</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="柔光箱，均匀，无阴影">
+                                        <span class="zh">柔光箱</span>
+                                        <span class="en">Softbox</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="烛光，温暖，氛围感">
+                                        <span class="zh">烛光</span>
+                                        <span class="en">Candlelight</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="伦勃朗光，三角形光，戏剧性">
+                                        <span class="zh">伦勃朗光</span>
+                                        <span class="en">Rembrandt lighting</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="环形光，均匀，减少阴影">
+                                        <span class="zh">环形光</span>
+                                        <span class="en">Ring light</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="侧光，纹理增强，立体感">
+                                        <span class="zh">侧光</span>
+                                        <span class="en">Side lighting</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="顶光，神秘，戏剧性">
+                                        <span class="zh">顶光</span>
+                                        <span class="en">Top lighting</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="底光，诡异，恐怖感">
+                                        <span class="zh">底光</span>
+                                        <span class="en">Bottom lighting</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="三点照明，专业，立体感">
+                                        <span class="zh">三点照明</span>
+                                        <span class="en">Three-point lighting</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="边缘光，轮廓突出，分离感">
+                                        <span class="zh">边缘光</span>
+                                        <span class="en">Edge light</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="聚光灯，焦点，戏剧性">
+                                        <span class="zh">聚光灯</span>
+                                        <span class="en">Spotlight</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="漫射光，柔和，无方向性">
+                                        <span class="zh">漫射光</span>
+                                        <span class="en">Diffused light</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="硬光，锐利，高对比度">
+                                        <span class="zh">硬光</span>
+                                        <span class="en">Hard light</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="冷光，蓝色，科技感">
+                                        <span class="zh">冷光</span>
+                                        <span class="en">Cold light</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="暖光，黄色，舒适感">
+                                        <span class="zh">暖光</span>
+                                        <span class="en">Warm light</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="生物发光，自然，神秘">
+                                        <span class="zh">生物发光</span>
+                                        <span class="en">Bioluminescence</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="彩虹光，多彩，梦幻">
+                                        <span class="zh">彩虹光</span>
+                                        <span class="en">Rainbow light</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="激光光，锐利，未来感">
+                                        <span class="zh">激光光</span>
+                                        <span class="en">Laser light</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="星光，闪烁，夜空">
+                                        <span class="zh">星光</span>
+                                        <span class="en">Starlight</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="月光，柔和，宁静">
+                                        <span class="zh">月光</span>
+                                        <span class="en">Moonlight</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="晨光，清新，希望">
+                                        <span class="zh">晨光</span>
+                                        <span class="en">Morning light</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="暮光，温暖，怀旧">
+                                        <span class="zh">暮光</span>
+                                        <span class="en">Twilight</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="category-pane" id="composition">
+                                <h3>构图</h3>
+                                <div class="prompt-list">
+                                    <div class="prompt-item" data-prompt="三分法构图，平衡，和谐">
+                                        <span class="zh">三分法构图</span>
+                                        <span class="en">Rule of thirds</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="中心构图，突出主体">
+                                        <span class="zh">中心构图</span>
+                                        <span class="en">Center composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="对角线构图，动感，张力">
+                                        <span class="zh">对角线构图</span>
+                                        <span class="en">Diagonal composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="框架构图，层次感，深度">
+                                        <span class="zh">框架构图</span>
+                                        <span class="en">Frame composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="引导线构图，视线引导">
+                                        <span class="zh">引导线构图</span>
+                                        <span class="en">Leading lines composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="对称构图，平衡，稳定">
+                                        <span class="zh">对称构图</span>
+                                        <span class="en">Symmetrical composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="黄金螺旋，自然，流动">
+                                        <span class="zh">黄金螺旋</span>
+                                        <span class="en">Golden spiral</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="前景构图，层次感，深度">
+                                        <span class="zh">前景构图</span>
+                                        <span class="en">Foreground composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="负空间构图，简约，强调">
+                                        <span class="zh">负空间构图</span>
+                                        <span class="en">Negative space composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="三角形构图，稳定，动态">
+                                        <span class="zh">三角形构图</span>
+                                        <span class="en">Triangular composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="Z字形构图，流动，引导视线">
+                                        <span class="zh">Z字形构图</span>
+                                        <span class="en">Zigzag composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="辐射状构图，动态，焦点">
+                                        <span class="zh">辐射状构图</span>
+                                        <span class="en">Radial composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="曲线构图，优雅，流动">
+                                        <span class="zh">曲线构图</span>
+                                        <span class="en">Curved composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="重叠构图，层次感，深度">
+                                        <span class="zh">重叠构图</span>
+                                        <span class="en">Overlapping composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="对比构图，强调，张力">
+                                        <span class="zh">对比构图</span>
+                                        <span class="en">Contrast composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="重复构图，节奏感，模式">
+                                        <span class="zh">重复构图</span>
+                                        <span class="en">Repetitive composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="打破构图，创新，动态">
+                                        <span class="zh">打破构图</span>
+                                        <span class="en">Broken composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="网格构图，秩序，结构">
+                                        <span class="zh">网格构图</span>
+                                        <span class="en">Grid composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="黄金分割，平衡，自然">
+                                        <span class="zh">黄金分割</span>
+                                        <span class="en">Golden ratio</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="全景构图，广阔，壮观">
+                                        <span class="zh">全景构图</span>
+                                        <span class="en">Panoramic composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="微距构图，细节，特写">
+                                        <span class="zh">微距构图</span>
+                                        <span class="en">Macro composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="鸟瞰构图，俯视，全局">
+                                        <span class="zh">鸟瞰构图</span>
+                                        <span class="en">Bird's eye view composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="蛙视构图，仰视，宏伟">
+                                        <span class="zh">蛙视构图</span>
+                                        <span class="en">Worm's eye view composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="鱼眼构图，扭曲，广角">
+                                        <span class="zh">鱼眼构图</span>
+                                        <span class="en">Fisheye composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="倒影构图，对称，梦幻">
+                                        <span class="zh">倒影构图</span>
+                                        <span class="en">Reflection composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="框内框构图，层次，深度">
+                                        <span class="zh">框内框构图</span>
+                                        <span class="en">Frame within frame composition</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="category-pane" id="color">
+                                <h3>色彩</h3>
+                                <div class="prompt-list">
+                                    <div class="prompt-item" data-prompt="鲜艳色彩，高饱和度，活力">
+                                        <span class="zh">鲜艳色彩</span>
+                                        <span class="en">Vibrant colors</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="单色调，统一，简洁">
+                                        <span class="zh">单色调</span>
+                                        <span class="en">Monochromatic</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="互补色，对比，张力">
+                                        <span class="zh">互补色</span>
+                                        <span class="en">Complementary colors</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="暖色调，红色，橙色，黄色">
+                                        <span class="zh">暖色调</span>
+                                        <span class="en">Warm tones</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="冷色调，蓝色，绿色，紫色">
+                                        <span class="zh">冷色调</span>
+                                        <span class="en">Cool tones</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="柔和色彩，低饱和度，舒适">
+                                        <span class="zh">柔和色彩</span>
+                                        <span class="en">Soft colors</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="黑白，高对比度，经典">
+                                        <span class="zh">黑白</span>
+                                        <span class="en">Black and white</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="复古色调，褪色，怀旧">
+                                        <span class="zh">复古色调</span>
+                                        <span class="en">Vintage tones</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="霓虹色彩，明亮，未来感">
+                                        <span class="zh">霓虹色彩</span>
+                                        <span class="en">Neon colors</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="渐变色，过渡，流动">
+                                        <span class="zh">渐变色</span>
+                                        <span class="en">Gradient colors</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="大地色调，自然，沉稳">
+                                        <span class="zh">大地色调</span>
+                                        <span class="en">Earth tones</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="糖果色，甜美，活泼">
+                                        <span class="zh">糖果色</span>
+                                        <span class="en">Candy colors</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="粉彩色，柔和，浪漫">
+                                        <span class="zh">粉彩色</span>
+                                        <span class="en">Pastel colors</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="金属色，光泽，奢华">
+                                        <span class="zh">金属色</span>
+                                        <span class="en">Metallic colors</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="荧光色，鲜艳，醒目">
+                                        <span class="zh">荧光色</span>
+                                        <span class="en">Fluorescent colors</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="宝石色调，深邃，高贵">
+                                        <span class="zh">宝石色调</span>
+                                        <span class="en">Jewel tones</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="原色，基础，强烈">
+                                        <span class="zh">原色</span>
+                                        <span class="en">Primary colors</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="次生色，混合，和谐">
+                                        <span class="zh">次生色</span>
+                                        <span class="en">Secondary colors</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="三角色，平衡，活力">
+                                        <span class="zh">三角色</span>
+                                        <span class="en">Triadic colors</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="分裂互补色，对比，和谐">
+                                        <span class="zh">分裂互补色</span>
+                                        <span class="en">Split complementary colors</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="四角色，丰富，多样">
+                                        <span class="zh">四角色</span>
+                                        <span class="en">Tetradic colors</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="类似色，和谐，统一">
+                                        <span class="zh">类似色</span>
+                                        <span class="en">Analogous colors</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="无彩色，中性，优雅">
+                                        <span class="zh">无彩色</span>
+                                        <span class="en">Achromatic colors</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="彩虹色，多彩，欢乐">
+                                        <span class="zh">彩虹色</span>
+                                        <span class="en">Rainbow colors</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="海洋色调，清新，宁静">
+                                        <span class="zh">海洋色调</span>
+                                        <span class="en">Ocean tones</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="森林色调，自然，生机">
+                                        <span class="zh">森林色调</span>
+                                        <span class="en">Forest tones</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="沙漠色调，温暖，干燥">
+                                        <span class="zh">沙漠色调</span>
+                                        <span class="en">Desert tones</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="category-pane" id="material">
+                                <h3>材质</h3>
+                                <div class="prompt-list">
+                                    <div class="prompt-item" data-prompt="金属质感，光泽，坚硬">
+                                        <span class="zh">金属质感</span>
+                                        <span class="en">Metallic texture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="木质纹理，自然，温暖">
+                                        <span class="zh">木质纹理</span>
+                                        <span class="en">Wood grain</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="玻璃质感，透明，光滑">
+                                        <span class="zh">玻璃质感</span>
+                                        <span class="en">Glass texture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="布料纹理，柔软，舒适">
+                                        <span class="zh">布料纹理</span>
+                                        <span class="en">Fabric texture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="石材纹理，粗糙，坚固">
+                                        <span class="zh">石材纹理</span>
+                                        <span class="en">Stone texture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="皮革质感，细腻，高级">
+                                        <span class="zh">皮革质感</span>
+                                        <span class="en">Leather texture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="塑料质感，光滑，现代">
+                                        <span class="zh">塑料质感</span>
+                                        <span class="en">Plastic texture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="陶瓷质感，细腻，优雅">
+                                        <span class="zh">陶瓷质感</span>
+                                        <span class="en">Ceramic texture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="纸质纹理，自然，环保">
+                                        <span class="zh">纸质纹理</span>
+                                        <span class="en">Paper texture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="绒毛质感，柔软，温暖">
+                                        <span class="zh">绒毛质感</span>
+                                        <span class="en">Fluffy texture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="液体质感，流动，透明">
+                                        <span class="zh">液体质感</span>
+                                        <span class="en">Liquid texture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="火焰质感，炽热，动态">
+                                        <span class="zh">火焰质感</span>
+                                        <span class="en">Fire texture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="冰质感，冰冷，透明">
+                                        <span class="zh">冰质感</span>
+                                        <span class="en">Ice texture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="泥土质感，粗糙，自然">
+                                        <span class="zh">泥土质感</span>
+                                        <span class="en">Clay texture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="沙砾质感，粗糙，颗粒感">
+                                        <span class="zh">沙砾质感</span>
+                                        <span class="en">Gravel texture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="丝绸质感，光滑，奢华">
+                                        <span class="zh">丝绸质感</span>
+                                        <span class="en">Silk texture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="碳纤维质感，轻盈，高科技">
+                                        <span class="zh">碳纤维质感</span>
+                                        <span class="en">Carbon fiber texture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="锈蚀质感，复古，工业">
+                                        <span class="zh">锈蚀质感</span>
+                                        <span class="en">Rust texture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="水晶质感，透明，闪耀">
+                                        <span class="zh">水晶质感</span>
+                                        <span class="en">Crystal texture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="珍珠质感，光滑，温润">
+                                        <span class="zh">珍珠质感</span>
+                                        <span class="en">Pearl texture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="大理石质感，优雅，高贵">
+                                        <span class="zh">大理石质感</span>
+                                        <span class="en">Marble texture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="羽毛质感，轻盈，柔软">
+                                        <span class="zh">羽毛质感</span>
+                                        <span class="en">Feather texture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="鳞片质感，闪亮，保护性">
+                                        <span class="zh">鳞片质感</span>
+                                        <span class="en">Scale texture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="生物质感，有机，自然">
+                                        <span class="zh">生物质感</span>
+                                        <span class="en">Organic texture</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="category-pane" id="scene">
+                                <h3>场景</h3>
+                                <div class="prompt-list">
+                                    <div class="prompt-item" data-prompt="城市景观，现代，繁华">
+                                        <span class="zh">城市景观</span>
+                                        <span class="en">Cityscape</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="自然风光，宁静，壮丽">
+                                        <span class="zh">自然风光</span>
+                                        <span class="en">Natural scenery</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="室内场景，温馨，舒适">
+                                        <span class="zh">室内场景</span>
+                                        <span class="en">Interior scene</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="未来城市，科技，先进">
+                                        <span class="zh">未来城市</span>
+                                        <span class="en">Futuristic city</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="古老废墟，历史，神秘">
+                                        <span class="zh">古老废墟</span>
+                                        <span class="en">Ancient ruins</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="奇幻森林，魔法，神秘">
+                                        <span class="zh">奇幻森林</span>
+                                        <span class="en">Fantasy forest</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="海底世界，深邃，奇异">
+                                        <span class="zh">海底世界</span>
+                                        <span class="en">Underwater world</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="太空场景，浩瀚，无垠">
+                                        <span class="zh">太空场景</span>
+                                        <span class="en">Space scene</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="沙漠景观，广阔，荒凉">
+                                        <span class="zh">沙漠景观</span>
+                                        <span class="en">Desert landscape</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="雪山场景，寒冷，纯净">
+                                        <span class="zh">雪山场景</span>
+                                        <span class="en">Snow mountain scene</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="热带雨林，茂密，生机">
+                                        <span class="zh">热带雨林</span>
+                                        <span class="en">Tropical rainforest</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="田园风光，宁静，田园">
+                                        <span class="zh">田园风光</span>
+                                        <span class="en">Pastoral scenery</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="工业场景，机械，现代">
+                                        <span class="zh">工业场景</span>
+                                        <span class="en">Industrial scene</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="赛博朋克城市，霓虹，未来">
+                                        <span class="zh">赛博朋克城市</span>
+                                        <span class="en">Cyberpunk city</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="童话世界，梦幻，色彩">
+                                        <span class="zh">童话世界</span>
+                                        <span class="en">Fairy tale world</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="战争场景，紧张，激烈">
+                                        <span class="zh">战争场景</span>
+                                        <span class="en">War scene</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="校园场景，青春，活力">
+                                        <span class="zh">校园场景</span>
+                                        <span class="en">Campus scene</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="海滩场景，阳光，放松">
+                                        <span class="zh">海滩场景</span>
+                                        <span class="en">Beach scene</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="夜景，灯光，浪漫">
+                                        <span class="zh">夜景</span>
+                                        <span class="en">Night scene</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="雨景，湿润，忧郁">
+                                        <span class="zh">雨景</span>
+                                        <span class="en">Rainy scene</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="雾景，朦胧，神秘">
+                                        <span class="zh">雾景</span>
+                                        <span class="en">Foggy scene</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="雪景，纯净，宁静">
+                                        <span class="zh">雪景</span>
+                                        <span class="en">Snowy scene</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="火山场景，炽热，壮观">
+                                        <span class="zh">火山场景</span>
+                                        <span class="en">Volcano scene</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="峡谷场景，深邃，壮丽">
+                                        <span class="zh">峡谷场景</span>
+                                        <span class="en">Canyon scene</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="category-pane" id="emotion">
+                                <h3>情感</h3>
+                                <div class="prompt-list">
+                                    <div class="prompt-item" data-prompt="喜悦，快乐，欢快">
+                                        <span class="zh">喜悦</span>
+                                        <span class="en">Joy</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="悲伤，忧郁，哀伤">
+                                        <span class="zh">悲伤</span>
+                                        <span class="en">Sadness</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="愤怒，激烈，暴躁">
+                                        <span class="zh">愤怒</span>
+                                        <span class="en">Anger</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="恐惧，紧张，惊恐">
+                                        <span class="zh">恐惧</span>
+                                        <span class="en">Fear</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="惊讶，震惊，意外">
+                                        <span class="zh">惊讶</span>
+                                        <span class="en">Surprise</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="平静，宁静，安详">
+                                        <span class="zh">平静</span>
+                                        <span class="en">Calm</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="浪漫，温柔，甜蜜">
+                                        <span class="zh">浪漫</span>
+                                        <span class="en">Romantic</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="孤独，寂寞，疏离">
+                                        <span class="zh">孤独</span>
+                                        <span class="en">Loneliness</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="希望，乐观，积极">
+                                        <span class="zh">希望</span>
+                                        <span class="en">Hope</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="绝望，无助，悲观">
+                                        <span class="zh">绝望</span>
+                                        <span class="en">Despair</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="兴奋，热情，活力">
+                                        <span class="zh">兴奋</span>
+                                        <span class="en">Excitement</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="怀旧，回忆，感伤">
+                                        <span class="zh">怀旧</span>
+                                        <span class="en">Nostalgia</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="神秘，隐秘，深邃">
+                                        <span class="zh">神秘</span>
+                                        <span class="en">Mysterious</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="敬畏，崇敬，震撼">
+                                        <span class="zh">敬畏</span>
+                                        <span class="en">Awe</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="焦虑，不安，紧张">
+                                        <span class="zh">焦虑</span>
+                                        <span class="en">Anxiety</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="满足，舒适，安心">
+                                        <span class="zh">满足</span>
+                                        <span class="en">Contentment</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="嫉妒，猜忌，不信任">
+                                        <span class="zh">嫉妒</span>
+                                        <span class="en">Jealousy</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="自信，坚定，果断">
+                                        <span class="zh">自信</span>
+                                        <span class="en">Confidence</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="羞怯，腼腆，内向">
+                                        <span class="zh">羞怯</span>
+                                        <span class="en">Shyness</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="好奇，探索，求知">
+                                        <span class="zh">好奇</span>
+                                        <span class="en">Curiosity</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="感激，感恩，谢意">
+                                        <span class="zh">感激</span>
+                                        <span class="en">Gratitude</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="困惑，迷茫，不解">
+                                        <span class="zh">困惑</span>
+                                        <span class="en">Confusion</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="自豪，骄傲，成就感">
+                                        <span class="zh">自豪</span>
+                                        <span class="en">Pride</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="内疚，懊悔，自责">
+                                        <span class="zh">内疚</span>
+                                        <span class="en">Guilt</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="category-pane" id="photography">
+                                <h3>摄影风格</h3>
+                                <div class="prompt-list">
+                                    <div class="prompt-item" data-prompt="人像摄影，特写，清晰">
+                                        <span class="zh">人像摄影</span>
+                                        <span class="en">Portrait photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="风景摄影，广阔，壮丽">
+                                        <span class="zh">风景摄影</span>
+                                        <span class="en">Landscape photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="街拍摄影，纪实，生动">
+                                        <span class="zh">街拍摄影</span>
+                                        <span class="en">Street photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="微距摄影，细节，精致">
+                                        <span class="zh">微距摄影</span>
+                                        <span class="en">Macro photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="黑白摄影，对比，经典">
+                                        <span class="zh">黑白摄影</span>
+                                        <span class="en">Black and white photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="长曝光摄影，流动，梦幻">
+                                        <span class="zh">长曝光摄影</span>
+                                        <span class="en">Long exposure photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="航拍摄影，俯瞰，壮观">
+                                        <span class="zh">航拍摄影</span>
+                                        <span class="en">Aerial photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="水下摄影，清澈，神秘">
+                                        <span class="zh">水下摄影</span>
+                                        <span class="en">Underwater photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="夜景摄影，灯光，氛围">
+                                        <span class="zh">夜景摄影</span>
+                                        <span class="en">Night photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="运动摄影，动态，瞬间">
+                                        <span class="zh">运动摄影</span>
+                                        <span class="en">Sports photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="建筑摄影，线条，结构">
+                                        <span class="zh">建筑摄影</span>
+                                        <span class="en">Architectural photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="时尚摄影，潮流，前卫">
+                                        <span class="zh">时尚摄影</span>
+                                        <span class="en">Fashion photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="纪实摄影，真实，感人">
+                                        <span class="zh">纪实摄影</span>
+                                        <span class="en">Documentary photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="静物摄影，构图，精致">
+                                        <span class="zh">静物摄影</span>
+                                        <span class="en">Still life photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="野生动物摄影，自然，野性">
+                                        <span class="zh">野生动物摄影</span>
+                                        <span class="en">Wildlife photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="婚礼摄影，浪漫，温馨">
+                                        <span class="zh">婚礼摄影</span>
+                                        <span class="en">Wedding photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="胶片摄影，颗粒，复古">
+                                        <span class="zh">胶片摄影</span>
+                                        <span class="en">Film photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="抽象摄影，形式，艺术">
+                                        <span class="zh">抽象摄影</span>
+                                        <span class="en">Abstract photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="全景摄影，广阔，沉浸">
+                                        <span class="zh">全景摄影</span>
+                                        <span class="en">Panoramic photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="高动态范围摄影，细节，层次">
+                                        <span class="zh">高动态范围摄影</span>
+                                        <span class="en">HDR photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="红外摄影，梦幻，超现实">
+                                        <span class="zh">红外摄影</span>
+                                        <span class="en">Infrared photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="光绘摄影，创意，光影">
+                                        <span class="zh">光绘摄影</span>
+                                        <span class="en">Light painting photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="手机摄影，便捷，日常">
+                                        <span class="zh">手机摄影</span>
+                                        <span class="en">Mobile photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="针孔摄影，朦胧，复古">
+                                        <span class="zh">针孔摄影</span>
+                                        <span class="en">Pinhole photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="商业摄影，专业，产品">
+                                        <span class="zh">商业摄影</span>
+                                        <span class="en">Commercial photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="艺术摄影，创意，表现">
+                                        <span class="zh">艺术摄影</span>
+                                        <span class="en">Art photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="新闻摄影，真实，时事">
+                                        <span class="zh">新闻摄影</span>
+                                        <span class="en">Photojournalism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="旅行摄影，异域，文化">
+                                        <span class="zh">旅行摄影</span>
+                                        <span class="en">Travel photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="儿童摄影，纯真，活泼">
+                                        <span class="zh">儿童摄影</span>
+                                        <span class="en">Child photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="宠物摄影，可爱，生动">
+                                        <span class="zh">宠物摄影</span>
+                                        <span class="en">Pet photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="美食摄影，诱人，色彩">
+                                        <span class="zh">美食摄影</span>
+                                        <span class="en">Food photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="舞台摄影，表演，灯光">
+                                        <span class="zh">舞台摄影</span>
+                                        <span class="en">Stage photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="天文摄影，星空，宇宙">
+                                        <span class="zh">天文摄影</span>
+                                        <span class="en">Astrophotography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="显微摄影，微观，科学">
+                                        <span class="zh">显微摄影</span>
+                                        <span class="en">Microscopic photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="双重曝光，叠加，创意">
+                                        <span class="zh">双重曝光</span>
+                                        <span class="en">Double exposure</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="宝丽来摄影，即时，复古">
+                                        <span class="zh">宝丽来摄影</span>
+                                        <span class="en">Polaroid photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="复古摄影，怀旧，滤镜">
+                                        <span class="zh">复古摄影</span>
+                                        <span class="en">Vintage photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="剪影摄影，轮廓，对比">
+                                        <span class="zh">剪影摄影</span>
+                                        <span class="en">Silhouette photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="高速摄影，冻结，瞬间">
+                                        <span class="zh">高速摄影</span>
+                                        <span class="en">High-speed photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="延时摄影，时间流逝，变化">
+                                        <span class="zh">延时摄影</span>
+                                        <span class="en">Time-lapse photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="自然光摄影，柔和，真实">
+                                        <span class="zh">自然光摄影</span>
+                                        <span class="en">Natural light photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="棚拍摄影，控制，专业">
+                                        <span class="zh">棚拍摄影</span>
+                                        <span class="en">Studio photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="城市摄影，建筑，人文">
+                                        <span class="zh">城市摄影</span>
+                                        <span class="en">Urban photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="极简摄影，简洁，留白">
+                                        <span class="zh">极简摄影</span>
+                                        <span class="en">Minimalist photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="概念摄影，思想，表达">
+                                        <span class="zh">概念摄影</span>
+                                        <span class="en">Conceptual photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="自画像摄影，自我，表达">
+                                        <span class="zh">自画像摄影</span>
+                                        <span class="en">Self-portrait photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="环境人像摄影，背景，故事">
+                                        <span class="zh">环境人像摄影</span>
+                                        <span class="en">Environmental portrait photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="生活摄影，日常，真实">
+                                        <span class="zh">生活摄影</span>
+                                        <span class="en">Lifestyle photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="新生儿摄影，柔软，纯真">
+                                        <span class="zh">新生儿摄影</span>
+                                        <span class="en">Newborn photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="家庭摄影，温馨，亲情">
+                                        <span class="zh">家庭摄影</span>
+                                        <span class="en">Family photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="音乐会摄影，舞台，灯光">
+                                        <span class="zh">音乐会摄影</span>
+                                        <span class="en">Concert photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="时尚大片摄影，高级，杂志">
+                                        <span class="zh">时尚大片摄影</span>
+                                        <span class="en">Fashion editorial photography</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="广告摄影，商业，吸引">
+                                        <span class="zh">广告摄影</span>
+                                        <span class="en">Advertising photography</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="category-pane" id="artperiod">
+                                <h3>艺术时期</h3>
+                                <div class="prompt-list">
+                                    <div class="prompt-item" data-prompt="文艺复兴，古典，人文">
+                                        <span class="zh">文艺复兴</span>
+                                        <span class="en">Renaissance</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="巴洛克，华丽，戏剧性">
+                                        <span class="zh">巴洛克</span>
+                                        <span class="en">Baroque</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="洛可可，精致，优雅">
+                                        <span class="zh">洛可可</span>
+                                        <span class="en">Rococo</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="新古典主义，理性，秩序">
+                                        <span class="zh">新古典主义</span>
+                                        <span class="en">Neoclassicism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="浪漫主义，情感，自然">
+                                        <span class="zh">浪漫主义</span>
+                                        <span class="en">Romanticism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="现实主义，真实，社会">
+                                        <span class="zh">现实主义</span>
+                                        <span class="en">Realism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="印象派，光影，瞬间">
+                                        <span class="zh">印象派</span>
+                                        <span class="en">Impressionism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="后印象派，色彩，表现">
+                                        <span class="zh">后印象派</span>
+                                        <span class="en">Post-Impressionism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="表现主义，情感，扭曲">
+                                        <span class="zh">表现主义</span>
+                                        <span class="en">Expressionism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="立体主义，几何，多角度">
+                                        <span class="zh">立体主义</span>
+                                        <span class="en">Cubism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="未来主义，动态，速度">
+                                        <span class="zh">未来主义</span>
+                                        <span class="en">Futurism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="达达主义，荒诞，反传统">
+                                        <span class="zh">达达主义</span>
+                                        <span class="en">Dadaism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="超现实主义，梦境，潜意识">
+                                        <span class="zh">超现实主义</span>
+                                        <span class="en">Surrealism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="抽象表现主义，情感，抽象">
+                                        <span class="zh">抽象表现主义</span>
+                                        <span class="en">Abstract Expressionism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="波普艺术，大众，商业">
+                                        <span class="zh">波普艺术</span>
+                                        <span class="en">Pop Art</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="极简主义，简约，本质">
+                                        <span class="zh">极简主义</span>
+                                        <span class="en">Minimalism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="概念艺术，思想，观念">
+                                        <span class="zh">概念艺术</span>
+                                        <span class="en">Conceptual Art</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="后现代主义，多元，解构">
+                                        <span class="zh">后现代主义</span>
+                                        <span class="en">Postmodernism</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="古希腊艺术，理想，和谐">
+                                        <span class="zh">古希腊艺术</span>
+                                        <span class="en">Ancient Greek Art</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="古罗马艺术，宏伟，纪念性">
+                                        <span class="zh">古罗马艺术</span>
+                                        <span class="en">Ancient Roman Art</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="拜占庭艺术，宗教，华丽">
+                                        <span class="zh">拜占庭艺术</span>
+                                        <span class="en">Byzantine Art</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="哥特艺术，垂直，神秘">
+                                        <span class="zh">哥特艺术</span>
+                                        <span class="en">Gothic Art</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="维多利亚时期，华丽，道德">
+                                        <span class="zh">维多利亚时期</span>
+                                        <span class="en">Victorian Era</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="爱德华时期，优雅，精致">
+                                        <span class="zh">爱德华时期</span>
+                                        <span class="en">Edwardian Era</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="category-pane" id="culture">
+                                <h3>文化元素</h3>
+                                <div class="prompt-list">
+                                    <div class="prompt-item" data-prompt="中国传统文化，古典，东方">
+                                        <span class="zh">中国传统文化</span>
+                                        <span class="en">Chinese traditional culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="日本文化，精致，禅意">
+                                        <span class="zh">日本文化</span>
+                                        <span class="en">Japanese culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="印度文化，多彩，神秘">
+                                        <span class="zh">印度文化</span>
+                                        <span class="en">Indian culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="埃及文化，古老，象征">
+                                        <span class="zh">埃及文化</span>
+                                        <span class="en">Egyptian culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="希腊文化，神话，哲学">
+                                        <span class="zh">希腊文化</span>
+                                        <span class="en">Greek culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="罗马文化，宏伟，法律">
+                                        <span class="zh">罗马文化</span>
+                                        <span class="en">Roman culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="凯尔特文化，神秘，自然">
+                                        <span class="zh">凯尔特文化</span>
+                                        <span class="en">Celtic culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="维京文化，勇敢，航海">
+                                        <span class="zh">维京文化</span>
+                                        <span class="en">Viking culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="玛雅文化，天文，金字塔">
+                                        <span class="zh">玛雅文化</span>
+                                        <span class="en">Mayan culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="阿兹特克文化，太阳，祭祀">
+                                        <span class="zh">阿兹特克文化</span>
+                                        <span class="en">Aztec culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="印加文化，黄金，山脉">
+                                        <span class="zh">印加文化</span>
+                                        <span class="en">Inca culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="非洲部落文化，原始，图腾">
+                                        <span class="zh">非洲部落文化</span>
+                                        <span class="en">African tribal culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="原住民文化，自然，精神">
+                                        <span class="zh">原住民文化</span>
+                                        <span class="en">Indigenous culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="波利尼西亚文化，海洋，部落">
+                                        <span class="zh">波利尼西亚文化</span>
+                                        <span class="en">Polynesian culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="中东文化，沙漠，伊斯兰">
+                                        <span class="zh">中东文化</span>
+                                        <span class="en">Middle Eastern culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="斯拉夫文化，民间，传统">
+                                        <span class="zh">斯拉夫文化</span>
+                                        <span class="en">Slavic culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="北欧文化，神话，极光">
+                                        <span class="zh">北欧文化</span>
+                                        <span class="en">Nordic culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="东南亚文化，热带，佛教">
+                                        <span class="zh">东南亚文化</span>
+                                        <span class="en">Southeast Asian culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="中亚文化，丝绸之路，游牧">
+                                        <span class="zh">中亚文化</span>
+                                        <span class="en">Central Asian culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="西非文化，节奏，面具">
+                                        <span class="zh">西非文化</span>
+                                        <span class="en">West African culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="加勒比文化，狂欢，混血">
+                                        <span class="zh">加勒比文化</span>
+                                        <span class="en">Caribbean culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="拉丁文化，热情，家族">
+                                        <span class="zh">拉丁文化</span>
+                                        <span class="en">Latin culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="巴厘岛文化，舞蹈，仪式">
+                                        <span class="zh">巴厘岛文化</span>
+                                        <span class="en">Balinese culture</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="毛利文化，纹身，战士">
+                                        <span class="zh">毛利文化</span>
+                                        <span class="en">Maori culture</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="category-pane" id="season">
+                                <h3>季节天气</h3>
+                                <div class="prompt-list">
+                                    <div class="prompt-item" data-prompt="春天，花开，生机">
+                                        <span class="zh">春天</span>
+                                        <span class="en">Spring</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="夏天，炎热，阳光">
+                                        <span class="zh">夏天</span>
+                                        <span class="en">Summer</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="秋天，金黄，丰收">
+                                        <span class="zh">秋天</span>
+                                        <span class="en">Autumn</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="冬天，雪白，寒冷">
+                                        <span class="zh">冬天</span>
+                                        <span class="en">Winter</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="晴天，明亮，晴朗">
+                                        <span class="zh">晴天</span>
+                                        <span class="en">Sunny day</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="雨天，湿润，清新">
+                                        <span class="zh">雨天</span>
+                                        <span class="en">Rainy day</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="雪天，洁白，宁静">
+                                        <span class="zh">雪天</span>
+                                        <span class="en">Snowy day</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="雾天，朦胧，神秘">
+                                        <span class="zh">雾天</span>
+                                        <span class="en">Foggy day</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="阴天，灰暗，沉闷">
+                                        <span class="zh">阴天</span>
+                                        <span class="en">Overcast day</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="雷雨，闪电，壮观">
+                                        <span class="zh">雷雨</span>
+                                        <span class="en">Thunderstorm</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="暴风雪，狂风，严寒">
+                                        <span class="zh">暴风雪</span>
+                                        <span class="en">Blizzard</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="台风，狂风，暴雨">
+                                        <span class="zh">台风</span>
+                                        <span class="en">Typhoon</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="彩虹，多彩，梦幻">
+                                        <span class="zh">彩虹</span>
+                                        <span class="en">Rainbow</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="日出，金色，希望">
+                                        <span class="zh">日出</span>
+                                        <span class="en">Sunrise</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="日落，橙红，浪漫">
+                                        <span class="zh">日落</span>
+                                        <span class="en">Sunset</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="月光，银色，宁静">
+                                        <span class="zh">月光</span>
+                                        <span class="en">Moonlight</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="星空，深邃，浩瀚">
+                                        <span class="zh">星空</span>
+                                        <span class="en">Starry sky</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="极光，绚丽，神秘">
+                                        <span class="zh">极光</span>
+                                        <span class="en">Aurora</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="霜冻，晶莹，寒冷">
+                                        <span class="zh">霜冻</span>
+                                        <span class="en">Frost</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="露水，清新，晨曦">
+                                        <span class="zh">露水</span>
+                                        <span class="en">Dew</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="冰雹，坚硬，破坏">
+                                        <span class="zh">冰雹</span>
+                                        <span class="en">Hail</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="沙尘暴，黄沙，模糊">
+                                        <span class="zh">沙尘暴</span>
+                                        <span class="en">Sandstorm</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="海雾，潮湿，朦胧">
+                                        <span class="zh">海雾</span>
+                                        <span class="en">Sea fog</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="晚霞，绚烂，温暖">
+                                        <span class="zh">晚霞</span>
+                                        <span class="en">Afterglow</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="category-pane" id="character">
+                                <h3>人物特征</h3>
+                                <div class="prompt-list">
+                                    <div class="prompt-item" data-prompt="年轻，活力，青春">
+                                        <span class="zh">年轻</span>
+                                        <span class="en">Young</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="年老，智慧，皱纹">
+                                        <span class="zh">年老</span>
+                                        <span class="en">Old</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="男性，阳刚，强壮">
+                                        <span class="zh">男性</span>
+                                        <span class="en">Male</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="女性，柔美，优雅">
+                                        <span class="zh">女性</span>
+                                        <span class="en">Female</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="儿童，天真，可爱">
+                                        <span class="zh">儿童</span>
+                                        <span class="en">Child</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="青少年，叛逆，成长">
+                                        <span class="zh">青少年</span>
+                                        <span class="en">Teenager</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="高个子，修长，挺拔">
+                                        <span class="zh">高个子</span>
+                                        <span class="en">Tall</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="矮个子，紧凑，灵活">
+                                        <span class="zh">矮个子</span>
+                                        <span class="en">Short</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="瘦削，纤细，轻盈">
+                                        <span class="zh">瘦削</span>
+                                        <span class="en">Thin</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="肥胖，圆润，丰满">
+                                        <span class="zh">肥胖</span>
+                                        <span class="en">Fat</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="肌肉发达，强壮，健美">
+                                        <span class="zh">肌肉发达</span>
+                                        <span class="en">Muscular</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="长发，飘逸，柔顺">
+                                        <span class="zh">长发</span>
+                                        <span class="en">Long hair</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="短发，利落，精神">
+                                        <span class="zh">短发</span>
+                                        <span class="en">Short hair</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="卷发，蓬松，活泼">
+                                        <span class="zh">卷发</span>
+                                        <span class="en">Curly hair</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="直发，顺滑，整齐">
+                                        <span class="zh">直发</span>
+                                        <span class="en">Straight hair</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="大眼睛，明亮，有神">
+                                        <span class="zh">大眼睛</span>
+                                        <span class="en">Big eyes</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="小眼睛，细长，神秘">
+                                        <span class="zh">小眼睛</span>
+                                        <span class="en">Small eyes</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="高鼻梁，挺拔，立体">
+                                        <span class="zh">高鼻梁</span>
+                                        <span class="en">High nose bridge</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="厚嘴唇，性感，丰满">
+                                        <span class="zh">厚嘴唇</span>
+                                        <span class="en">Thick lips</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="白皙皮肤，光滑，细腻">
+                                        <span class="zh">白皙皮肤</span>
+                                        <span class="en">Fair skin</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="黝黑皮肤，健康，阳光">
+                                        <span class="zh">黝黑皮肤</span>
+                                        <span class="en">Dark skin</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="雀斑，可爱，自然">
+                                        <span class="zh">雀斑</span>
+                                        <span class="en">Freckles</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="疤痕，故事，坚韧">
+                                        <span class="zh">疤痕</span>
+                                        <span class="en">Scars</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="纹身，个性，艺术">
+                                        <span class="zh">纹身</span>
+                                        <span class="en">Tattoos</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="category-pane" id="negative">
+                                <h3>负面提示词</h3>
+                                <div class="prompt-list">
+                                    <div class="prompt-item" data-prompt="模糊，低质量，变形">
+                                        <span class="zh">模糊低质量</span>
+                                        <span class="en">Blurry</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="多余的手指，不合理的肢体">
+                                        <span class="zh">多余肢体</span>
+                                        <span class="en">Extra fingers</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="扭曲的面部，不自然的表情">
+                                        <span class="zh">扭曲面部</span>
+                                        <span class="en">Distorted face</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="水印，签名，文字">
+                                        <span class="zh">水印文字</span>
+                                        <span class="en">Watermark</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="裁剪，不完整的构图">
+                                        <span class="zh">裁剪不完整</span>
+                                        <span class="en">Cropped</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="噪点，颗粒感，粗糙">
+                                        <span class="zh">噪点粗糙</span>
+                                        <span class="en">Noise</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="不正确的比例，透视错误">
+                                        <span class="zh">比例错误</span>
+                                        <span class="en">Incorrect proportions</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="丑陋，怪异，令人不适">
+                                        <span class="zh">丑陋怪异</span>
+                                        <span class="en">Ugly</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="过度曝光，曝光不足">
+                                        <span class="zh">曝光问题</span>
+                                        <span class="en">Overexposed</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="重复，克隆，复制">
+                                        <span class="zh">重复克隆</span>
+                                        <span class="en">Repetitive</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="低分辨率，压缩伪影">
+                                        <span class="zh">分辨率低</span>
+                                        <span class="en">Low resolution</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="模糊不清，失焦">
+                                        <span class="zh">模糊失焦</span>
+                                        <span class="en">Blurry</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="解剖错误，结构错误，逻辑错误">
+                                        <span class="zh">解剖错误</span>
+                                        <span class="en">Anatomical errors</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="透视错误，空间错误，比例错误">
+                                        <span class="zh">透视错误</span>
+                                        <span class="en">Perspective errors</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="颜色错误，色调错误，饱和度错误">
+                                        <span class="zh">颜色错误</span>
+                                        <span class="en">Color errors</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="光线错误，阴影错误，反射错误">
+                                        <span class="zh">光线错误</span>
+                                        <span class="en">Lighting errors</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="纹理错误，材质错误，表面错误">
+                                        <span class="zh">纹理错误</span>
+                                        <span class="en">Texture errors</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="细节缺失，模糊不清，分辨率低">
+                                        <span class="zh">细节缺失</span>
+                                        <span class="en">Missing details</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="不连贯，断裂，碎片化">
+                                        <span class="zh">不连贯</span>
+                                        <span class="en">Incoherent</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="风格混乱，混合，不统一">
+                                        <span class="zh">风格混乱</span>
+                                        <span class="en">Style confusion</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="构图失衡，不稳定，不协调">
+                                        <span class="zh">构图失衡</span>
+                                        <span class="en">Unbalanced composition</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="AI生成痕迹，人工痕迹，不自然">
+                                        <span class="zh">AI痕迹</span>
+                                        <span class="en">AI generation traces</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="过度处理，过度修饰，不真实">
+                                        <span class="zh">过度处理</span>
+                                        <span class="en">Overprocessed</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="不专业，业余，粗糙">
+                                        <span class="zh">不专业</span>
+                                        <span class="en">Unprofessional</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="低俗，不雅，冒犯">
+                                        <span class="zh">低俗不雅</span>
+                                        <span class="en">Vulgar</span>
+                                    </div>
+                                    <div class="prompt-item" data-prompt="版权问题，侵权，抄袭">
+                                        <span class="zh">版权问题</span>
+                                        <span class="en">Copyright issues</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 帮助弹窗 -->
+        <div id="help-modal" class="modal help-modal">
+            <div class="modal-content help-modal-content">
+                <div class="modal-header">
+                    <h2>使用帮助</h2>
+                    <span class="close-modal close-help-modal">&times;</span>
+                </div>
+                <div class="modal-body help-modal-body">
+                    <div class="help-content">
+                        <!-- 左侧导航 -->
+                        <div class="help-nav">
+                            <ul>
+                                <li><a href="#" data-section="overview">概览</a></li>
+                                <li><a href="#" data-section="translation">文本翻译</a></li>
+                                <li><a href="#" data-section="expansion">AI扩写</a></li>
+                                <li><a href="#" data-section="prompt-library">提示词库</a></li>
+                                <li><a href="#" data-section="negative-prompt">反向提示词</a></li>
+                                <li><a href="#" data-section="image-analysis">图片反推提示词</a></li>
+                                
+                            </ul>
+                        </div>
+                        <!-- 右侧内容 -->
+                        <div class="help-main">
+                            <div class="help-section active" id="help-overview">
+                                <h3>概览</h3>
+                                <p>GLM多语言互译工具是一个集成了智谱AI大模型的多功能工具，不仅支持高质量的多语言互译，还提供提示词扩写、反向提示词生成以及图片反推提示词等功能。
+                                </p>
+                            </div>
+                            <div class="help-section" id="help-translation">
+                                <h3>文本翻译</h3>
+                                <p>1. <strong>输入文本</strong>：在左侧文本框中输入您要翻译的文本。</p>
+                                <p>2. <strong>选择语言</strong>：上方的下拉菜单用于选择源语言和目标语言。源语言支持“自动检测”。</p>
+                                <p>3. <strong>选择模型</strong>：根据需求选择合适的GLM模型（如GLM-4-Flash、GLM-4.5等）。</p>
+                                <p>4. <strong>执行翻译</strong>：点击“翻译”按钮或使用快捷键 <code>Ctrl+Enter</code> 开始翻译。结果将显示在右侧输出框中。
+                                </p>
+                                <p>5. <strong>复制结果</strong>：点击“复制翻译”按钮可将结果复制到剪贴板。</p>
+                            </div>
+                            <div class="help-section" id="help-expansion">
+                                <h3>AI扩写</h3>
+                                <p>此功能可将简短的AI文生图提示词扩写成更详细、更专业的描述，从而生成更高质量的图像。</p>
+                                <p>1. 在左侧文本框中输入您的基础提示词。</p>
+                                <p>2. 点击底部的“扩写”按钮。</p>
+                                <p>3. AI将为您生成一个更丰富的提示词。此时，“扩写”按钮会变为“原文”按钮。</p>
+                                <p>4. 您可以随时点击“原文”按钮切换回原始提示词，再次点击可切换回扩写后的版本。</p>
+                                <p>5. 扩写成功后，系统会自动生成一组“反向提示词”供您参考。</p>
+                            </div>
+                            <div class="help-section" id="help-prompt-library">
+                                <h3>提示词库</h3>
+                                <p>内置了丰富的AI文生图提示词库，涵盖艺术风格、光照、构图、色彩等多个维度。</p>
+                                <p>1. 点击底部的“提示词库”按钮打开库面板。</p>
+                                <p>2. 通过顶部的标签页切换不同类别的提示词。</p>
+                                <p>3. <strong>添加提示词</strong>：点击任意一个提示词卡片，它会被自动添加到左侧的翻译/提示词输入框中，并用逗号分隔。</p>
+                                <p>4. <strong>移除提示词</strong>：再次点击已选中的（高亮的）提示词卡片，即可从输入框中移除它。</p>
+                                <p>5. 提示词卡片支持拖拽，您可以将其拖拽到输入框、输出框或反向提示词框中。</p>
+                            </div>
+                            <div class="help-section" id="help-negative-prompt">
+                                <h3>反向提示词</h3>
+                                <p>反向提示词（Negative Prompt）用于告诉AI在生成图像时应避免哪些内容，是提升出图质量的关键。</p>
+                                <p>1. 当您使用"AI扩写"功能后，系统会根据"自动生成"复选框的状态决定是否在下方生成一组反向提示词。</p>
+                                <p>2. 如果您不希望自动生成反向提示词，可以取消勾选反向提示词区域右上角的"自动生成"复选框。</p>
+                                <p>3. 您可以手动编辑此文本框，添加或删除内容。</p>
+                                <p>4. 使用"复制"按钮可将其复制到剪贴板，以便在其他AI绘图工具中使用。</p>
+                                <p>5. 您也可以将提示词库中的提示词拖拽到此文本框中，作为反向提示词的一部分。</p>
+                            </div>
+                            <div class="help-section" id="help-image-analysis">
+                                <h3>图片反推提示词</h3>
+                                <p>此功能可以分析您上传的图片，并生成一段详细的、可用于AI文生图的提示词。</p>
+                                <p>1. 在页面下方的“图片反推提示词”区域，点击上传区域或拖拽图片到此处。</p>
+                                <p>2. 支持 JPG、PNG 格式，文件大小不能超过5MB。</p>
+                                <p>3. 上传成功后，选择您希望生成的提示词语言（如中文、英文等）。</p>
+                                <p>4. 点击“分析图片”按钮，AI将开始分析图片并生成提示词。</p>
+                                <p>5. 生成后，您可以使用“复制”、“扩写提示词”或“使用此提示词”按钮进行后续操作。“使用此提示词”会将生成的内容直接填充到上方的主输入框中。</p>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 帮助按钮 -->
+        <button id="help-btn" class="help-btn" title="使用帮助">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+        </button>
+        <!-- 图片反推提示词模块 -->
+		<div class="image-to-prompt-container collapsible-section">
+			<div class="collapsible-header">
+				<h2>图片反推提示词</h2>
+				<button class="toggle-btn" aria-label="折叠/展开">
+					<span class="toggle-icon">−</span>
+				</button>
+			</div>
+			<div class="collapsible-content">
+				<p>上传图片，AI将为您分析并生成相应的提示词</p>
+				<!-- 原有上传区、预览、输出等内容 -->
+            <div class="image-upload-section">
+                <div class="upload-area" id="image-upload-area">
+                    <div class="upload-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                    </div>
+                    <div class="upload-text">
+                        <p>点击或拖拽图片到此处上传</p>
+                        <p class="upload-hint">支持 JPG、PNG 格式，最大 10MB</p>
+                    </div>
+                    <input type="file" id="image-input" accept="image/jpeg,image/jpg,image/png" style="display: none;">
+                </div>
+                <div class="image-preview-container" id="image-preview-container" style="display: none;">
+                    <div class="image-preview">
+                        <img id="preview-image" src="" alt="预览图片">
+                    </div>
+                    <div class="image-actions">
+                        <button id="remove-image-btn" class="remove-image-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                            移除图片
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="image-prompt-section">
+                <div class="prompt-language-selector">
+                    <div class="image-model-selector">
+                        <label for="image-model-select">模型：</label>
+                        <select id="image-model-select" class="image-model-select">
+                            <option value="glm-4.1v-thinking-flashx">GLM-4.1V-Thinking-Flash</option>
+                            <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="prompt-output-container">
+                    <div class="prompt-output-header">
+                        <h3>生成的提示词</h3>
+                        <div class="prompt-actions">
+                            <button id="copy-prompt-btn" class="copy-prompt-btn" style="display: none;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                复制
+                            </button>
+                            <button id="expand-prompt-btn" class="expand-prompt-btn" style="display: none;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M12 2L2 7L12 12L22 7L12 2Z"></path>
+                                    <path d="M2 17L12 22L22 17"></path>
+                                    <path d="M2 12L12 17L22 12"></path>
+                                </svg>
+                                扩写提示词
+                            </button>
+                            <button id="use-prompt-btn" class="use-prompt-btn" style="display: none;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                使用此提示词
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="image-prompt-output" class="image-prompt-output"
+                        placeholder="生成的提示词将显示在这里..."></textarea>
+                    <div class="char-counter" id="prompt-char-counter">0 字</div>
+                </div>
+                <div class="analyze-button-container">
+                    <button id="analyze-image-btn" class="analyze-image-btn" disabled title="根据上传的图片分析其中的特征">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                        分析图片
+                    </button>
+                </div>
+            </div>
+			</div>
+		</div>
+        
+        <!-- 文生图功能模块 -->
+		<div class="text-to-image-container collapsible-section">
+			<div class="text-to-image-header collapsible-header">
+				<h2>文生图功能</h2>
+				<button class="toggle-btn" aria-label="折叠/展开">
+					<span class="toggle-icon">−</span>
+				</button>
+			</div>
+			<div class="text-to-image-content collapsible-content">
+				<!-- 提示词输入区 -->
+				<div class="t2i-input-group">
+					<label class="t2i-input-label" for="t2i-prompt-input">提示词</label>
+					<div class="t2i-input-wrapper">
+						<textarea id="t2i-prompt-input" placeholder="描述你想要生成的图像..." maxlength="1000"></textarea>
+					</div>
+					<div class="t2i-input-actions">
+						<div>
+							<button id="t2i-use-prompt-btn" class="t2i-action-btn">
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M12 2L2 7L12 12L22 7L12 2Z"></path>
+									<path d="M2 17L12 22L22 17"></path>
+									<path d="M2 12L12 17L22 12"></path>
+								</svg>
+								使用翻译结果
+							</button>
+							<button id="t2i-clear-prompt-btn" class="t2i-action-btn">
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<polyline points="3 6 5 6 21 6"></polyline>
+									<path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+								</svg>
+								清除提示词
+							</button>
+						</div>
+						<div id="t2i-prompt-counter" class="t2i-prompt-counter">0/1000</div>
+					</div>
+				</div>
+
+				<!-- 反向提示词输入区 -->
+				<div class="t2i-input-group">
+					<label class="t2i-input-label" for="t2i-negative-prompt-input">反向提示词（可选）</label>
+					<div class="t2i-input-wrapper">
+						<textarea id="t2i-negative-prompt-input" placeholder="描述你不希望出现在图像中的内容..." maxlength="1000"></textarea>
+					</div>
+					<div class="t2i-input-actions">
+						<div>
+							<button id="t2i-use-negative-prompt-btn" class="t2i-action-btn">
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M12 2L2 7L12 12L22 7L12 2Z"></path>
+									<path d="M2 17L12 22L22 17"></path>
+									<path d="M2 12L12 17L22 12"></path>
+								</svg>
+								使用反向提示词
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<!-- 图像比例选择 -->
+				<div class="t2i-options-group">
+					<div class="t2i-option">
+						<label class="t2i-input-label">图像比例</label>
+						<div class="t2i-aspect-ratio-selector">
+							<div class="t2i-aspect-option active" data-ratio="1:1">1:1</div>
+							<div class="t2i-aspect-option" data-ratio="4:3">4:3</div>
+							<div class="t2i-aspect-option" data-ratio="16:9">16:9</div>
+							<div class="t2i-aspect-option" data-ratio="3:4">3:4</div>
+							<div class="t2i-aspect-option" data-ratio="9:16">9:16</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- 生成按钮 -->
+				<div class="t2i-generate-section">
+					<button id="t2i-generate-btn">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+							<circle cx="8.5" cy="8.5" r="1.5"></circle>
+							<polyline points="21 15 16 10 5 21"></polyline>
+						</svg>
+						生成图像
+					</button>
+				</div>
+
+				<!-- 生成中状态 -->
+				<div id="t2i-generating">
+					<div class="t2i-spinner"></div>
+					<p>正在生成图像，请稍候...</p>
+				</div>
+
+				<!-- 结果区域 -->
+				<div class="t2i-result-section">
+					<div id="t2i-result-placeholder" class="t2i-result-placeholder">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+							<circle cx="8.5" cy="8.5" r="1.5"></circle>
+							<polyline points="21 15 16 10 5 21"></polyline>
+						</svg>
+						<p>生成的图像将在这里显示</p>
+					</div>
+					<div id="t2i-result-image" class="t2i-result-image">
+						<img id="t2i-generated-image" src="" alt="生成的图像">
+						<div class="t2i-result-actions">
+							<button id="t2i-save-image-btn" class="t2i-result-btn t2i-save-btn">
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path>
+									<polyline points="17 21 17 13 7 13 7 21"></polyline>
+									<polyline points="7 3 7 8 15 8"></polyline>
+								</svg>
+								保存图像
+							</button>
+							<button id="t2i-copy-prompt-btn" class="t2i-result-btn t2i-copy-btn">
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+									<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
+								</svg>
+								复制提示词
+							</button>
+						</div>
+					</div>
+					<div id="t2i-result-error" class="t2i-result-error">
+						<p>生成图像时出错，请检查提示词并重试。</p>
+					</div>
+				</div>
+			</div>
+		</div>
+        
+        <!-- API密钥弹窗 -->
+        <div id="api-key-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>API密钥设置</h2>
+                    <span class="close-api-key-modal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="api-key-form">
+                        <label for="api-key-input">智谱AI API密钥：</label>
+                        <input type="password" id="api-key-input" placeholder="请输入您的智谱AI API密钥">
+                        <button id="save-api-key-btn" class="save-api-key-btn">保存密钥</button>
+                    </div>
+                    <div class="api-key-form">
+                        <label for="gemini-api-key-input">Gemini API密钥：</label>
+                        <input type="password" id="gemini-api-key-input" placeholder="请输入您的Gemini API密钥">
+                        <button id="save-gemini-api-key-btn" class="save-api-key-btn">保存密钥</button>
+                    </div>
+                    <div class="api-key-form">
+                        <label for="volcengine-api-key-input">火山引擎API密钥：</label>
+                        <input type="password" id="volcengine-api-key-input" placeholder="请输入您的火山引擎API密钥">
+                        <button id="save-volcengine-api-key-btn" class="save-api-key-btn">保存密钥</button>
+                    </div>
+                    <div class="api-key-info">
+                        <p>如何获取智谱AI API密钥：</p>
+                        <ol>
+                            <li>访问 <a href="https://open.bigmodel.cn/" target="_blank">智谱AI开放平台</a></li>
+                            <li>注册并登录您的账户</li>
+                            <li>在控制台中创建API密钥</li>
+                            <li>复制密钥并粘贴到上方输入框</li>
+                        </ol>
+                        <p>如何获取Gemini API密钥：</p>
+                        <ol>
+                            <li>访问 <a href="https://ai.google.dev/" target="_blank">Google AI for Developers</a></li>
+                            <li>注册并登录您的Google账户</li>
+                            <li>在控制台中创建API密钥</li>
+                            <li>复制密钥并粘贴到上方输入框</li>
+                        </ol>
+                        <p>如何获取火山引擎API密钥：</p>
+                        <ol>
+                            <li>访问 <a href="https://console.volcengine.com/iam/keymanage" target="_blank">火山引擎IAM密钥管理</a></li>
+                            <li>登录您的火山引擎账户</li>
+                            <li>在密钥管理页面创建新的访问密钥</li>
+                            <li>复制AccessKey ID和Secret AccessKey，格式为"AccessKeyID:SecretAccessKey"</li>
+                            <li>将完整密钥信息粘贴到上方输入框</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
