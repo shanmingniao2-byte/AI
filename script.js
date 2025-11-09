@@ -1,20 +1,50 @@
 // 预处理文本函数
 function preprocessText(text) {
     if (!text) return '';
-    
+
     // 去除文本两端的空白字符
     let processedText = text.trim();
-    
+
     // 将多个连续的空格替换为单个空格
     processedText = processedText.replace(/\s+/g, ' ');
-    
+
     // 将多个连续的换行符替换为单个换行符
     processedText = processedText.replace(/\n+/g, '\n');
-    
+
     // 移除特殊字符，保留基本标点符号
     processedText = processedText.replace(/[^\w\s\u4e00-\u9fa5\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af.,!?;:'"()\[\]{}\/@#$%^&*+=<>~`|-]/g, '');
-    
+
     return processedText;
+}
+
+// TextEncoder 实例，用于后续的哈希和签名计算
+const textEncoder = new TextEncoder();
+
+// 将 ArrayBuffer 转换为十六进制字符串
+function bufferToHex(buffer) {
+    const hashArray = Array.from(new Uint8Array(buffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// 解析火山引擎密钥，格式应为 "AccessKeyID:SecretAccessKey"
+function parseVolcengineCredentials(rawKey) {
+    if (!rawKey || typeof rawKey !== 'string') {
+        return null;
+    }
+
+    const parts = rawKey.split(':').map(part => part.trim()).filter(Boolean);
+
+    if (parts.length !== 2) {
+        return null;
+    }
+
+    const [accessKeyId, secretAccessKey] = parts;
+
+    if (!accessKeyId || !secretAccessKey) {
+        return null;
+    }
+
+    return { accessKeyId, secretAccessKey };
 }
 
 // DOM元素 - 获取页面上的各种UI元素
@@ -389,12 +419,15 @@ saveGeminiApiKeyBtn.addEventListener('click', () => {
 // 保存火山引擎API密钥功能
 saveVolcengineApiKeyBtn.addEventListener('click', () => {
     const newVolcengineApiKey = volcengineApiKeyInput.value.trim(); // 获取输入的火山引擎API密钥并去除两端空格
-    if (newVolcengineApiKey) {
-        volcengineApiKey = newVolcengineApiKey; // 更新火山引擎API密钥变量
+    const parsedCredentials = parseVolcengineCredentials(newVolcengineApiKey);
+
+    if (parsedCredentials) {
+        volcengineApiKey = `${parsedCredentials.accessKeyId}:${parsedCredentials.secretAccessKey}`; // 规范化存储格式
         localStorage.setItem('volcengine-api-key', volcengineApiKey); // 保存火山引擎API密钥到本地存储
+        volcengineApiKeyInput.value = volcengineApiKey;
         showNotification('火山引擎API密钥已保存', 'success'); // 显示成功通知
     } else {
-        showNotification('请输入有效的火山引擎API密钥', 'error'); // 显示错误通知
+        showNotification('请输入有效的火山引擎API密钥（AccessKeyID:SecretAccessKey）', 'error'); // 显示错误通知
     }
 });
 
@@ -2596,34 +2629,48 @@ function updateT2INegativePromptCharCount() {
 
 // 火山引擎API签名计算辅助函数
 async function sha256(message) {
-    const msgBuffer = new TextEncoder().encode(message);
+    const msgBuffer = textEncoder.encode(message);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => ('00' + b.toString(16)).slice(-2)).join('');
-    return hashHex;
+    return bufferToHex(hashBuffer);
+}
+
+function normalizeToUint8Array(input) {
+    if (typeof input === 'string') {
+        return textEncoder.encode(input);
+    }
+
+    if (input instanceof Uint8Array) {
+        return input;
+    }
+
+    if (input instanceof ArrayBuffer) {
+        return new Uint8Array(input);
+    }
+
+    if (ArrayBuffer.isView(input)) {
+        return new Uint8Array(input.buffer);
+    }
+
+    throw new TypeError('Unsupported key type for HMAC computation');
 }
 
 async function hmacSha256(message, key) {
-    const msgBuffer = new TextEncoder().encode(message);
-    const keyBuffer = new TextEncoder().encode(key);
+    const msgBuffer = textEncoder.encode(message);
+    const keyData = normalizeToUint8Array(key);
     const cryptoKey = await crypto.subtle.importKey(
         'raw',
-        keyBuffer,
+        keyData,
         { name: 'HMAC', hash: 'SHA-256' },
         false,
         ['sign']
     );
-    const signatureBuffer = await crypto.subtle.sign('HMAC', cryptoKey, msgBuffer);
-    const signatureArray = Array.from(new Uint8Array(signatureBuffer));
-    const signatureHex = signatureArray.map(b => ('00' + b.toString(16)).slice(-2)).join('');
-    return signatureHex;
+    return await crypto.subtle.sign('HMAC', cryptoKey, msgBuffer);
 }
 
-async function getSignatureKey(key, dateStamp, regionName, serviceName) {
-    const kDate = await hmacSha256(dateStamp, 'VOLC' + key);
-    const kRegion = await hmacSha256(regionName, kDate);
-    const kService = await hmacSha256(serviceName, kRegion);
-    const kSigning = await hmacSha256('volc_request', kService);
+async function getSignatureKey(secretAccessKey, dateStamp, serviceName, requestType = 'request') {
+    const kDate = await hmacSha256(dateStamp, 'VOLC' + secretAccessKey);
+    const kService = await hmacSha256(serviceName, kDate);
+    const kSigning = await hmacSha256(requestType, kService);
     return kSigning;
 }
 
@@ -2673,11 +2720,15 @@ async function generateImage() {
     }
     
     // 检查API密钥
-    if (!volcengineApiKey) {
-        showNotification('请先设置火山引擎API密钥', 'error');
+    const volcengineCredentials = parseVolcengineCredentials(volcengineApiKey);
+
+    if (!volcengineCredentials) {
+        showNotification('请先设置有效的火山引擎API密钥（AccessKeyID:SecretAccessKey）', 'error');
         apiKeyModal.classList.add('show');
         return;
     }
+
+    const { accessKeyId, secretAccessKey } = volcengineCredentials;
     
     // 显示加载状态
     t2iGenerateBtn.disabled = true;
@@ -2698,7 +2749,7 @@ async function generateImage() {
         
         // 构建请求参数
         const requestBody = {
-            "req_key": "jimeng_v4",
+            "req_key": "see_dream_v4",
             "prompt": prompt,
             "width": width,
             "height": height,
@@ -2706,47 +2757,49 @@ async function generateImage() {
             "steps": 50,
             "scale": 7.5
         };
-        
+
         // 如果有反向提示词，添加到请求参数
         if (negativePrompt) {
             requestBody["negative_prompt"] = negativePrompt;
         }
-        
+
         // 计算签名
         const method = 'POST';
         const host = 'visual.volcengineapi.com';
         const path = '/';
         const query = `Action=${action}&Version=${version}`;
-        
+
         // 创建规范化请求
         const canonicalHeaders = `content-type:application/json\nhost:${host}\n`;
         const signedHeaders = 'content-type;host';
-        const payloadHash = await sha256(JSON.stringify(requestBody));
+        const requestPayload = JSON.stringify(requestBody);
+        const payloadHash = await sha256(requestPayload);
         const canonicalRequest = `${method}\n${path}\n${query}\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
-        
+
         // 创建待签字符串
         const algorithm = 'HMAC-SHA256';
-        const date = new Date(timestamp * 1000).toISOString().substr(0, 10).replace(/-/g, '');
+        const isoString = new Date(timestamp * 1000).toISOString();
+        const date = isoString.substr(0, 10).replace(/-/g, '');
         const credentialScope = `${date}/${service}/request`;
-        const stringToSign = `${algorithm}\n${timestamp}\n${credentialScope}\n${await sha256(canonicalRequest)}`;
-        
+        const hashedCanonicalRequest = await sha256(canonicalRequest);
+        const stringToSign = `${algorithm}\n${timestamp}\n${credentialScope}\n${hashedCanonicalRequest}`;
+
         // 计算签名
-        const signingKey = await getSignatureKey(volcengineApiKey, date, service, 'request');
-        const signature = await hmacSha256(stringToSign, signingKey);
-        
+        const signingKey = await getSignatureKey(secretAccessKey, date, service);
+        const signature = bufferToHex(await hmacSha256(stringToSign, signingKey));
+
         // 构建Authorization头
-        const authorization = `${algorithm} Credential=${volcengineApiKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
-        
+        const authorization = `${algorithm} Credential=${accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+
         // 提交文生图任务
         const response = await fetch(`https://${host}/?${query}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': authorization,
-                'X-Date': new Date(timestamp * 1000).toISOString().replace(/[:\-]|\.\d{3}/g, ''),
-                'Host': host
+                'X-Date': isoString.replace(/[:\-]|\.\d{3}/g, '')
             },
-            body: JSON.stringify(requestBody)
+            body: requestPayload
         });
         
         if (!response.ok) {
