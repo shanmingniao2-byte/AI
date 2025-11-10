@@ -17,34 +17,19 @@ function preprocessText(text) {
     return processedText;
 }
 
-// TextEncoder 实例，用于后续的哈希和签名计算
-const textEncoder = new TextEncoder();
-
-// 将 ArrayBuffer 转换为十六进制字符串
-function bufferToHex(buffer) {
-    const hashArray = Array.from(new Uint8Array(buffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-// 解析火山引擎密钥，格式应为 "AccessKeyID:SecretAccessKey"
-function parseVolcengineCredentials(rawKey) {
+// 规范化火山引擎即梦 API Key
+function normalizeVolcengineApiKey(rawKey) {
     if (!rawKey || typeof rawKey !== 'string') {
         return null;
     }
 
-    const parts = rawKey.split(':').map(part => part.trim()).filter(Boolean);
+    const normalizedKey = rawKey.trim();
 
-    if (parts.length !== 2) {
+    if (!normalizedKey) {
         return null;
     }
 
-    const [accessKeyId, secretAccessKey] = parts;
-
-    if (!accessKeyId || !secretAccessKey) {
-        return null;
-    }
-
-    return { accessKeyId, secretAccessKey };
+    return normalizedKey;
 }
 
 // DOM元素 - 获取页面上的各种UI元素
@@ -135,7 +120,8 @@ const t2iPromptCounter = document.getElementById('t2i-prompt-counter'); // 文�
 // 全局变量 - 存储应用状态和数据
 let apiKey = localStorage.getItem('glm-api-key') || ''; // 从本地存储获取API密钥
 let geminiApiKey = localStorage.getItem('gemini-api-key') || ''; // 从本地存储获取Gemini API密钥
-let volcengineApiKey = localStorage.getItem('volcengine-api-key') || ''; // 从本地存储获取火山引擎API密钥
+const DEFAULT_VOLCENGINE_API_KEY = '0d24e7b7-8721-459d-8825-b1cd7a6cb659';
+let volcengineApiKey = localStorage.getItem('volcengine-api-key') || DEFAULT_VOLCENGINE_API_KEY; // 从本地存储获取火山引擎API密钥
 let isExpandMode = localStorage.getItem('expand-mode') === 'true'; // 扩写模式状态
 let originalText = ''; // 存储扩写前的原始文本
 let expandedText = ''; // 存储扩写后的文本
@@ -419,15 +405,15 @@ saveGeminiApiKeyBtn.addEventListener('click', () => {
 // 保存火山引擎API密钥功能
 saveVolcengineApiKeyBtn.addEventListener('click', () => {
     const newVolcengineApiKey = volcengineApiKeyInput.value.trim(); // 获取输入的火山引擎API密钥并去除两端空格
-    const parsedCredentials = parseVolcengineCredentials(newVolcengineApiKey);
+    const normalizedKey = normalizeVolcengineApiKey(newVolcengineApiKey);
 
-    if (parsedCredentials) {
-        volcengineApiKey = `${parsedCredentials.accessKeyId}:${parsedCredentials.secretAccessKey}`; // 规范化存储格式
+    if (normalizedKey) {
+        volcengineApiKey = normalizedKey; // 更新存储的火山引擎API密钥
         localStorage.setItem('volcengine-api-key', volcengineApiKey); // 保存火山引擎API密钥到本地存储
         volcengineApiKeyInput.value = volcengineApiKey;
-        showNotification('火山引擎API密钥已保存', 'success'); // 显示成功通知
+        showNotification('火山引擎即梦API密钥已保存', 'success'); // 显示成功通知
     } else {
-        showNotification('请输入有效的火山引擎API密钥（AccessKeyID:SecretAccessKey）', 'error'); // 显示错误通知
+        showNotification('请输入有效的火山引擎即梦API密钥', 'error'); // 显示错误通知
     }
 });
 
@@ -2627,53 +2613,6 @@ function updateT2INegativePromptCharCount() {
     }, 100);
 }
 
-// 火山引擎API签名计算辅助函数
-async function sha256(message) {
-    const msgBuffer = textEncoder.encode(message);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    return bufferToHex(hashBuffer);
-}
-
-function normalizeToUint8Array(input) {
-    if (typeof input === 'string') {
-        return textEncoder.encode(input);
-    }
-
-    if (input instanceof Uint8Array) {
-        return input;
-    }
-
-    if (input instanceof ArrayBuffer) {
-        return new Uint8Array(input);
-    }
-
-    if (ArrayBuffer.isView(input)) {
-        return new Uint8Array(input.buffer);
-    }
-
-    throw new TypeError('Unsupported key type for HMAC computation');
-}
-
-async function hmacSha256(message, key) {
-    const msgBuffer = textEncoder.encode(message);
-    const keyData = normalizeToUint8Array(key);
-    const cryptoKey = await crypto.subtle.importKey(
-        'raw',
-        keyData,
-        { name: 'HMAC', hash: 'SHA-256' },
-        false,
-        ['sign']
-    );
-    return await crypto.subtle.sign('HMAC', cryptoKey, msgBuffer);
-}
-
-async function getSignatureKey(secretAccessKey, dateStamp, serviceName, requestType = 'request') {
-    const kDate = await hmacSha256(dateStamp, 'VOLC' + secretAccessKey);
-    const kService = await hmacSha256(serviceName, kDate);
-    const kSigning = await hmacSha256(requestType, kService);
-    return kSigning;
-}
-
 // 生成图片
 async function generateImage() {
     const prompt = t2iPromptInput.value.trim();
@@ -2720,15 +2659,13 @@ async function generateImage() {
     }
     
     // 检查API密钥
-    const volcengineCredentials = parseVolcengineCredentials(volcengineApiKey);
+    const normalizedApiKey = normalizeVolcengineApiKey(volcengineApiKey);
 
-    if (!volcengineCredentials) {
-        showNotification('请先设置有效的火山引擎API密钥（AccessKeyID:SecretAccessKey）', 'error');
+    if (!normalizedApiKey) {
+        showNotification('请先设置有效的火山引擎即梦API密钥', 'error');
         apiKeyModal.classList.add('show');
         return;
     }
-
-    const { accessKeyId, secretAccessKey } = volcengineCredentials;
     
     // 显示加载状态
     t2iGenerateBtn.disabled = true;
@@ -2741,92 +2678,80 @@ async function generateImage() {
     t2iGenerating.style.display = 'block';
     
     try {
-        // 火山引擎API需要使用签名计算方式
-        const service = 'cv';
-        const version = '2022-08-31';
-        const action = 'ImageGeneration';
-        const timestamp = Math.floor(Date.now() / 1000);
-        
-        // 构建请求参数
+        const size = `${width}*${height}`;
         const requestBody = {
-            "req_key": "see_dream_v4",
-            "prompt": prompt,
-            "width": width,
-            "height": height,
-            "seed": -1,
-            "steps": 50,
-            "scale": 7.5
+            model: 'see-dream-v4',
+            input: {
+                prompt: prompt,
+                size: size,
+                image_num: 1,
+                seed: -1,
+                steps: 30,
+                cfg_scale: 7.5
+            }
         };
 
-        // 如果有反向提示词，添加到请求参数
         if (negativePrompt) {
-            requestBody["negative_prompt"] = negativePrompt;
+            requestBody.input.negative_prompt = negativePrompt;
         }
 
-        // 计算签名
-        const method = 'POST';
-        const host = 'visual.volcengineapi.com';
-        const path = '/';
-        const query = `Action=${action}&Version=${version}`;
-
-        // 创建规范化请求
-        const canonicalHeaders = `content-type:application/json\nhost:${host}\n`;
-        const signedHeaders = 'content-type;host';
-        const requestPayload = JSON.stringify(requestBody);
-        const payloadHash = await sha256(requestPayload);
-        const canonicalRequest = `${method}\n${path}\n${query}\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
-
-        // 创建待签字符串
-        const algorithm = 'HMAC-SHA256';
-        const isoString = new Date(timestamp * 1000).toISOString();
-        const date = isoString.substr(0, 10).replace(/-/g, '');
-        const credentialScope = `${date}/${service}/request`;
-        const hashedCanonicalRequest = await sha256(canonicalRequest);
-        const stringToSign = `${algorithm}\n${timestamp}\n${credentialScope}\n${hashedCanonicalRequest}`;
-
-        // 计算签名
-        const signingKey = await getSignatureKey(secretAccessKey, date, service);
-        const signature = bufferToHex(await hmacSha256(stringToSign, signingKey));
-
-        // 构建Authorization头
-        const authorization = `${algorithm} Credential=${accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
-
-        // 提交文生图任务
-        const response = await fetch(`https://${host}/?${query}`, {
+        const response = await fetch('https://ark.cn-beijing.volces.com/api/v3/multimodal/text2image', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': authorization,
-                'X-Date': isoString.replace(/[:\-]|\.\d{3}/g, '')
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${normalizedApiKey}`
             },
-            body: requestPayload
+            body: JSON.stringify(requestBody)
         });
-        
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error?.message || `请求失败，状态码: ${response.status}`);
+
+        let data = null;
+        try {
+            data = await response.json();
+        } catch (parseError) {
+            console.error('解析火山引擎响应失败:', parseError);
         }
-        
-        const data = await response.json();
-        
-        // 检查响应数据
-        if (!data.data || !data.data[0] || !data.data[0].url) {
+
+        if (!response.ok) {
+            const errorMessage = data?.message || data?.msg || data?.error?.message || `请求失败，状态码: ${response.status}`;
+            throw new Error(errorMessage);
+        }
+
+        const imageResult = Array.isArray(data?.data) && data.data.length > 0 ? data.data[0] : null;
+
+        if (!imageResult) {
             throw new Error('API返回的数据格式不正确');
         }
-        
-        const imageUrl = data.data[0].url;
-        
+
+        let imageUrl = '';
+        if (imageResult.url) {
+            imageUrl = imageResult.url;
+        } else if (imageResult.image_url) {
+            imageUrl = imageResult.image_url;
+        } else {
+            const base64Image = imageResult.b64_image || imageResult.base64 || imageResult.image_base64 || imageResult.image;
+            if (base64Image) {
+                imageUrl = `data:image/png;base64,${base64Image}`;
+            }
+        }
+
+        if (!imageUrl) {
+            throw new Error('未找到生成的图像数据');
+        }
+
+        const taskId = data?.task_id || data?.request_id || data?.id || '';
+
         // 保存生成的图片数据
         t2iGeneratedImageData = {
             url: imageUrl,
             prompt: prompt,
-            task_id: data.request_id || ''
+            task_id: taskId
         };
-        t2iCurrentTaskId = data.request_id || '';
-        
+        t2iCurrentTaskId = taskId;
+
         // 显示生成的图片
         displayGeneratedImage(imageUrl, prompt);
-        
+
         showNotification('图片生成成功', 'success');
     } catch (error) {
         console.error('生成图片错误:', error);
